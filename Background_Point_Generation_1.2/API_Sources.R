@@ -118,69 +118,68 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
 
     edd_date_start = format(as.Date(startdate), "%m/%d/%Y")
     edd_date_end = format(as.Date(enddate), "%m/%d/%Y")
+    
+    g2 <- g %>%
+      select(Scientificname, RowsID) %>%
+      filter(Scientificname %in% species_list) %>%
+      arrange(Scientificname)
 
     natl_codes <- c('USFS','BLM', 'BLM ','fed','NPS',"USFW","DOD")
     edd_df <- list()
     
     #to do: add credible records 
-    for (i in species_list){
-      if (length(g$RowsID[which(g$Scientificname==i)]) > 0){
+    for (i in unique(g2$RowsID)){
+      print(paste0("Searching for: ",g2$Scientificname[g2$RowsID==i][1]," and synonyms", collapse = ""))
     
-        #queries for verified records
-        bw_url_v <- paste("https://sandbox.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
-                          "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                          "&subjectNumber="
-                          , na.omit(g$RowsID[which(g$Scientificname==i)])
-                          ,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
-                          ,'&IdentificationCredibility=verified'
-                          ,"&observationdatestart=", edd_date_start
-                          ,"&observationdateend=", edd_date_end
-                          ,sep = "")
-        
-        #queries for 'credible' records
-        bw_url_c <- paste("https://sandbox.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
-                          "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                          "&subjectNumber="
-                          , na.omit(g$RowsID[which(g$Scientificname==i)])
-                          ,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
-                          ,'&IdentificationCredibility=credible'
-                          ,"&observationdatestart=", edd_date_start
-                          ,"&observationdateend=", edd_date_end
-                          ,sep = "")
-        
-        #pulls records to be filtered for Federal Lands only
-        bw_url_f <- paste("https://sandbox.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
-                          "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                          "&subjectNumber="
-                          , na.omit(g$RowsID[which(g$Scientificname==i)])
-                          ,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
-                          ,"&observationdatestart=", edd_date_start
-                          ,"&observationdateend=", edd_date_end
-                          ,sep = "")
+      #queries for verified records (US only)
+      bw_url_v <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
+                        "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
+                        "&subjectNumber=",i
+                        ,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
+                        ,'&IdentificationCredibility=verified'
+                        ,"&observationdatestart=", edd_date_start
+                        ,"&observationdateend=", edd_date_end
+                        ,sep = "")
+      
+      #queries for 'credible' records (US only)
+      bw_url_c <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
+                        "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
+                        "&subjectNumber=",i,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
+                        ,'&IdentificationCredibility=credible'
+                        ,"&observationdatestart=", edd_date_start
+                        ,"&observationdateend=", edd_date_end
+                        ,sep = "")
+      
+      #pulls records to be filtered for Federal Lands only (US only)
+      bw_url_f <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
+                        "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
+                        "&subjectNumber=",i,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
+                        ,"&observationdatestart=", edd_date_start
+                        ,"&observationdateend=", edd_date_end
+                        ,sep = "")
 
-        eddmaps_call_v <- fromJSON(unique(bw_url_v), simplifyDataFrame = T)
-        eddmaps_call_c <- fromJSON(unique(bw_url_c), simplifyDataFrame = T)
-        eddmaps_call_f <- fromJSON(unique(bw_url_c), simplifyDataFrame = T)
+      eddmaps_call_v <- fromJSON(unique(bw_url_v), simplifyDataFrame = T)
+      eddmaps_call_c <- fromJSON(unique(bw_url_c), simplifyDataFrame = T)
+      eddmaps_call_f <- fromJSON(unique(bw_url_c), simplifyDataFrame = T)
 
 
-        if(class(eddmaps_call_v$rows) == 'data.frame'){
-          if(nrow(eddmaps_call_v$rows > 0)){
-            edd_df <- rbind(edd_df, eddmaps_call_v$rows)
-          }
+      if(class(eddmaps_call_v$rows) == 'data.frame'){
+        if(nrow(eddmaps_call_v$rows > 0)){
+          edd_df <- rbind(edd_df, eddmaps_call_v$rows)
         }
-        if(class(eddmaps_call_c$rows) == 'data.frame'){
-          if(nrow(eddmaps_call_c$rows > 0)){
-            edd_df <- rbind(edd_df, eddmaps_call_c$rows)
-          }
+      }
+      if(class(eddmaps_call_c$rows) == 'data.frame'){
+        if(nrow(eddmaps_call_c$rows > 0)){
+          edd_df <- rbind(edd_df, eddmaps_call_c$rows)
         }
-        if(class(eddmaps_call_f$rows) == 'data.frame'){
-          if(nrow(eddmaps_call_f$rows > 0)){
-            edd_df <- rbind(edd_df, eddmaps_call_f$rows %>% filter(national_ownership %in% natl_codes))
-            # edd_df <- rbind(edd_df, eddmaps_call_f$rows)
-          }
+      }
+      if(class(eddmaps_call_f$rows) == 'data.frame'){
+        if(nrow(eddmaps_call_f$rows > 0)){
+          edd_df <- rbind(edd_df, eddmaps_call_f$rows %>% filter(national_ownership %in% natl_codes))
+          # edd_df <- rbind(edd_df, eddmaps_call_f$rows)
         }
-        else {next}    
-      } else {next}
+      }
+      else {next}    
     }
 
     # 3.2 - format EDDMaps dataframe
@@ -211,4 +210,5 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
 
     }  
   }
+  closeAllConnections()
 }

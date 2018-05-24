@@ -3,11 +3,15 @@ library(jsonlite)
 library(tidyverse)
 library(stringr)
 library(gsheet)
+library(httr)
 
-#TO DO: produce dataframe describing the total number of available records, by species and data source
+#TO DO: 1. produce dataframe describing the total number of available records, by species and data source
+#       2. include country field
 
 
-api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoengine','eddmaps'), limit=5, startDate=NULL, endDate=NULL, bisonopts=NULL, gbifopts=NULL, inatopts=NULL){
+api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoengine','eddmaps')
+                     , limit=5, startDate=NULL, endDate=NULL, bisonopts=NULL, gbifopts=NULL, inatopts=NULL
+                     , US_only = NULL){
   
   # 2. spocc (GBIF, BISON, iNaturalist, and EcoEngine) -------------------------
   
@@ -16,19 +20,38 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
   #       Note 2: depending on the number of species and databases queried, the occ() function may result in very long run-times (> 15 min), esp w/ ecoengine
   
   v <- c("gbif","bison", "inat","ecoengine")
+  
+  #restrict records to US or leave search open to global records
+  if(US_only==T){
+    
+    gbifopts <- c(gbifopts, country='US')
+    edd_loc <- "&Country=926"
+    
+    if(is.null(bisonopts)){
+      bisonopts <- list(params=c('countryCode: US')) #if no set options, generate variable
+    }
+    if(is.null(bisonopts$params)){
+      bisonopts <- c(bisonopts, params=c('countryCode: US')) #if params not included options, generate variable
+    } else{
+      bisonopts <- paste0(bisonopts,'; countryCode: US') # if params are included, append countryCode search option
+    }
+  } else{
+    edd_loc = ""
+  }
+  
 
   if(length(v[which(v%in%sources)]) > 0) {
 
     print('Searching GBIF/BISON/iNaturalist/EcoEngine for occurrence records')
 
-    spocc_df <<- occ(species_list
+    spocc_df <-suppressWarnings(occ(species_list
                     , from=v[which(v%in%sources)]
                     , limit=limit
                     , has_coords=TRUE 
                     , date = c(as.Date(startDate), as.Date(endDate))
                     , bisonopts=bisonopts
                     , gbifopts=gbifopts
-                    )
+                    ))
 
     if(sum(sapply(spocc_df$gbif$data, NROW)) > 0){
       gbif_df <- as.data.frame(occ2df(spocc_df$gbif)) %>%
@@ -127,7 +150,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     natl_codes <- c('USFS','BLM', 'BLM ','fed','NPS',"USFW","DOD")
     edd_df <- list()
     
-    #to do: add credible records 
+    #to do: 
     for (i in unique(g2$RowsID)){
       print(paste0("Searching for: ",g2$Scientificname[g2$RowsID==i][1]," and synonyms", collapse = ""))
     
@@ -135,27 +158,32 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
       bw_url_v <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
                         "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
                         "&subjectNumber=",i
-                        ,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
+                        ,"&div=5&negative=0&reviewed=1&spatial=1",edd_loc
                         ,'&IdentificationCredibility=verified'
                         ,"&observationdatestart=", edd_date_start
                         ,"&observationdateend=", edd_date_end
+                        ,"&length=",limit
                         ,sep = "")
       
       #queries for 'credible' records (US only)
       bw_url_c <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
                         "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                        "&subjectNumber=",i,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
+                        "&subjectNumber=",i
+                        ,"&div=5&negative=0&reviewed=1&spatial=1",edd_loc
                         ,'&IdentificationCredibility=credible'
                         ,"&observationdatestart=", edd_date_start
                         ,"&observationdateend=", edd_date_end
+                        ,"&length=",limit
                         ,sep = "")
       
       #pulls records to be filtered for Federal Lands only (US only)
       bw_url_f <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
                         "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                        "&subjectNumber=",i,"&div=5&negative=0&reviewed=1&spatial=1&Country=926"
+                        "&subjectNumber=",i
+                        ,"&div=5&negative=0&reviewed=1&spatial=1",edd_loc
                         ,"&observationdatestart=", edd_date_start
                         ,"&observationdateend=", edd_date_end
+                        ,"&length=",limit
                         ,sep = "")
 
       eddmaps_call_v <- fromJSON(unique(bw_url_v), simplifyDataFrame = T)
@@ -176,7 +204,6 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
       if(class(eddmaps_call_f$rows) == 'data.frame'){
         if(nrow(eddmaps_call_f$rows > 0)){
           edd_df <- rbind(edd_df, eddmaps_call_f$rows %>% filter(national_ownership %in% natl_codes))
-          # edd_df <- rbind(edd_df, eddmaps_call_f$rows)
         }
       }
       else {next}    

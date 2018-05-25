@@ -4,7 +4,7 @@
 #
 # Authors: Peder Engelstad (adapted from work by Helen Sofaer)
 # Contact: pengel@colostate.edu
-# Last Updated: 5/21/2018
+# Last Updated: 5/24/2018
 
 
 
@@ -16,7 +16,7 @@ if(length(new.packages)) install.packages(new.packages)
 # devtools::install_github("ropensci/spocc")
 
 library(tidyverse)
-setwd('C:/Users/peder/Documents/USGS/Scripts/Background_Point_Generation_1.1')
+setwd('C:/Users/peder/Documents/USGS/Scripts/SpeciesOccurrenceData')
 
 # 1. Parse entire USDA plants database species list
 
@@ -43,8 +43,15 @@ USDAexotic = USDAexotic[-which(duplicated(USDAexotic$Scientific.Name)), ] # fina
 source('./SpeciesProcessing.R')
 
 # Notes:
-# 1. 
-species_processing(sample(USDAexotic$Scientific.Name, size=50), USDA=F)
+# 2.1 This function produces two objects: sp_df and species_search_list. The latter
+#     is a vector of all accepted species names and their synonyms. This list extracts 
+#     the genus and species ONLY!
+#
+# 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
+#     synonym USDA codes that can be passed to data sources that require them.
+
+species_processing(USDAexotic$Scientific.Name, USDA=F)
+
 
 ################################################################################
 #3. Pull data from API Sources
@@ -54,25 +61,45 @@ api_sources <- c('gbif','bison','eddmaps')
 startdate <- '1980-01-01'
 enddate <- as.Date(Sys.Date())
 
-# Query data available from API and loads into df_list the resulting data frame.
+# 3.1  api_data Function notes:
+#      sources - choose from 'gbif','bison','eddmaps','inat', and/or 'ecoengine'
+#      limit - is the number of results PER SPECIES and is not currently passed to EDDMapS
+#              which pulls ALL available records with geospatial information
+#
+# 3.2  df_list must be created outside the function to avoid re-running data sources that fail
+# 3.3  visit ... for information on the full range of bison and gbif options
+
 df_list <- list()
 bison_options = list(params=c('basisOfRecord: specimen, observation'))
 
-# reminder: limit is the number of results PER SPECIES
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 10
+         , limit = 100000
          , bisonopts = bison_options          
          , startDate = startdate
          , endDate = enddate
-)
+         , US_only = F
+         )
+
 
 ################################################################################
 #4. Perform QA/QC on occurrence records
 source('./DataCleaning.R')
 
+# 4.1  This function performs several actions to filter the downloaded data.
+#      A. It first combines the data frames from the selected sources (occ_merged)
+#      B. Then it removes records with dates (somehow) in the future and missing lat/long (occ_filter)
+#      C. A new column of the officially accepted ITIS species name and genus is appended (occ_all)
+#      D. occ_all is then de-duplicated and sorted alphabetically by species name as a final data object
+
 Data_QAQC(df_list)
 
-write.csv(occ_all, './BackgroundPointsPresence_Output.csv')
+test = occ_all %>%
+  select(DataSet, ITIS_AcceptedName) %>%
+  group_by(DataSet, ITIS_AcceptedName) %>%
+  summarize(count = n())
+
+head(test)
+# write.csv(occ_all, './BackgroundPointsPresence_Output.csv')
 ################################################################################
 

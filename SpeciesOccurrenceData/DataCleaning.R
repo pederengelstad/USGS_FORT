@@ -13,22 +13,21 @@ Data_QAQC <- function(data=NULL){
     occ_filter <<- occ_merged %>%
       dplyr::select(DataSet, source_sp_name, searched_term, decimalLatitude,decimalLongitude, ObsDate, ObsYear,IdentificationCredibility,national_ownership,local_ownership) %>%
       dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns
-      dplyr::filter(searched_term %in% sp_df$ITISacceptedName | searched_term %in% sp_df$synonym_base)
+      dplyr::filter(word(searched_term,1,2,' ') %in% sp_df$ITISacceptedName | word(searched_term,1,2,' ') %in% sp_df$synonym_base)
   } else{
     occ_filter <<- occ_merged %>%
       dplyr::select(DataSet, source_sp_name, searched_term, decimalLatitude,decimalLongitude, ObsDate, ObsYear) %>%
       dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns
-      dplyr::filter(searched_term %in% sp_df$ITISacceptedName | searched_term %in% sp_df$synonym_base)                                       # remove bad fuzzy var. and spp. matches (mostly from EDDMapS)
-}
+      dplyr::filter(word(searched_term,1,2,' ') %in% sp_df$ITISacceptedName | word(searched_term,1,2,' ') %in% sp_df$synonym_base)
+  }
   
     # Sort by scientific name and retain only unique records
-  occ_all <- occ_filter %>%
-    mutate(ITIS_AcceptedName = ifelse(test = is.na(sp_df$ITISacceptedName[match(occ_filter$searched_term, sp_df$synonym_base)]),
-                                      occ_filter$searched_term,
-                                      sp_df$ITISacceptedName[match(occ_filter$searched_term, sp_df$synonym_base)]))
-
-  occ_all <- unique(occ_all[order(occ_all$ITIS_AcceptedName, decreasing = F),])
-  
+    occ_all <- occ_filter %>%
+      mutate(ITIS_AcceptedName = ifelse(test = is.na(sp_df$ITISacceptedName[match(occ_filter$searched_term, sp_df$synonym_base)]),
+                                      sp_df$ITISacceptedName[match(word(occ_filter$searched_term,1,2,' '), sp_df$ITISacceptedName)],
+                                      sp_df$ITISacceptedName[match(word(occ_filter$searched_term,1,2,' '), sp_df$synonym_base)])) %>%
+      arrange(ITIS_AcceptedName) %>%
+      unique()  
 
 
   if(exists('state_centroid')==FALSE){

@@ -39,202 +39,172 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     edd_loc = ""
   }
   
-
+  
   if(length(v[which(v%in%sources)]) > 0) {
-
+    
     print('Searching GBIF/BISON/iNaturalist/EcoEngine for occurrence records')
-
+    
     spocc_df <-suppressWarnings(occ(species_list
-                    , from=v[which(v%in%sources)]
-                    , limit=limit
-                    , has_coords=TRUE 
-                    , date = c(as.Date(startDate), as.Date(endDate))
-                    , bisonopts=bisonopts
-                    , gbifopts=gbifopts
-                    ))
-
+                                    , from=v[which(v%in%sources)]
+                                    , limit=limit
+                                    , has_coords=TRUE 
+                                    , date = c(as.Date(startDate),as.Date(endDate))
+                                    , bisonopts=bisonopts
+                                    , gbifopts=gbifopts
+    ))
+    
     if(sum(sapply(spocc_df$gbif$data, NROW)) > 0){
       gbif_df <- as.data.frame(occ2df(spocc_df$gbif)) %>%
-      filter(basisOfRecord %in% c("PRESERVED_SPECIMEN", "HUMAN_OBSERVATION", "OBSERVATION")) %>%
-      select(prov, name, longitude, latitude, eventDate, year, scientificName) %>%
-      mutate(DataSet = prov,
-             decimalLatitude = as.numeric(latitude),
-             decimalLongitude = as.numeric(longitude),
-             ObsDate = as.Date(eventDate),
-             ObsYear = year,
-             source_sp_name = word(scientificName,1,2," "),
-             searched_term = name
-             )
+        filter(basisOfRecord %in% c("PRESERVED_SPECIMEN", "HUMAN_OBSERVATION", "OBSERVATION")) %>%
+        select(prov, name, longitude, latitude, eventDate, year, scientificName) %>%
+        mutate(DataSet = prov,
+               decimalLatitude = as.numeric(latitude),
+               decimalLongitude = as.numeric(longitude),
+               ObsDate = as.Date(eventDate),
+               ObsYear = year,
+               source_sp_name = word(scientificName,1,2," "),
+               searched_term = name
+        )
       gbif_final <- gbif_df %>%
         select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
         unique()
     } else{ gbif_final <- data.frame()}
-
+    
     if(sum(sapply(spocc_df$bison$data, NROW)) > 0){
       bison_df <- as.data.frame(occ2df(spocc_df$bison)) %>%
-      filter(!is.na(date) & str_count(string = pointPath, pattern = 'centroid') != 1) %>%
-      mutate(DataSet = prov,
-             decimalLatitude = as.numeric(latitude),
-             decimalLongitude = as.numeric(longitude),
-             ObsDate = as.Date(date),
-             ObsYear = as.integer(format(as.Date(date), "%Y")),
-             source_sp_name = providedScientificName,
-             searched_term = word(name,1,2," ")
-             )
+        filter(!is.na(date) & str_count(string = pointPath, pattern = 'centroid') != 1) %>%
+        mutate(DataSet = prov,
+               decimalLatitude = as.numeric(latitude),
+               decimalLongitude = as.numeric(longitude),
+               ObsDate = as.Date(date),
+               ObsYear = as.integer(format(as.Date(date), "%Y")),
+               source_sp_name = providedScientificName,
+               searched_term = word(name,1,2," ")
+        )
       bison_final <- bison_df %>%
         select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
         unique()
     } else{ bison_final <- data.frame()}
-
+    
     if(sum(sapply(spocc_df$inat$data, NROW)) > 0){
       inat_df <- as.data.frame(occ2df(spocc_df$inat)) %>%
-      filter(location_is_exact == TRUE) %>%
-      mutate(DataSet = prov,
-             decimalLatitude = as.numeric(latitude),
-             decimalLongitude = as.numeric(longitude),
-             ObsDate = as.Date(observed_on),
-             ObsYear = as.integer(format(as.Date(observed_on), "%Y")),
-             source_sp_name = name,
-             scientificName = word(name,1,2," ")
-             )
+        filter(location_is_exact == TRUE) %>%
+        mutate(DataSet = prov,
+               decimalLatitude = as.numeric(latitude),
+               decimalLongitude = as.numeric(longitude),
+               ObsDate = as.Date(observed_on),
+               ObsYear = as.integer(format(as.Date(observed_on), "%Y")),
+               source_sp_name = name,
+               scientificName = word(name,1,2," ")
+        )
       inat_final <- inat_df %>%
         select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
         unique()
     } else{ inat_final <- data.frame()}
-
+    
     if(sum(sapply(spocc_df$ecoengine$data, NROW)) > 0){
       ecoengine_df <- as.data.frame(occ2df(spocc_df$ecoengine)) %>%
-      mutate(DataSet = prov,
-             decimalLatitude = as.numeric(latitude),
-             decimalLongitude = as.numeric(longitude),
-             ObsDate = as.Date(eventDate),
-             ObsYear = year,
-             source_sp_name = name,
-             scientificName = word(name,1,2," ")
-             )
+        mutate(DataSet = prov,
+               decimalLatitude = as.numeric(latitude),
+               decimalLongitude = as.numeric(longitude),
+               ObsDate = as.Date(eventDate),
+               ObsYear = year,
+               source_sp_name = name,
+               scientificName = word(name,1,2," ")
+        )
       ecoengine_final <- ecoengine_df %>%
         select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
         unique()
     } else{ ecoengine_final <- data.frame()}
-
+    
     # combine all available data frames
     spocc_final <- gbif_final %>%
       bind_rows(bison_final, inat_final, ecoengine_final)
-
+    
     #add final version to global list of data frames
     df_list[['spocc']] <<- unique(spocc_final)
-
+    
     # assign("df_list", df_list, envir=.GlobalEnv)
-
+    
     print('GBIF/BISON/iNaturalist/EcoEngine Search Complete')
-
+    
   }
-
+  
   # EDDMapS API Call
   if(length(sources[which("eddmaps"%in%sources)]) > 0){
-
-    print('Searching EDDMapS for occurrence records')
-
+    
+    print('Searching EDDMapS for occurrence records with geospatial data')
+    
     # I created a publically hosted version of the plant subject data from EDDMapS instead of iteratively
     # hitting their API for each species subject ID
     g <- suppressWarnings(gsheet2tbl('https://docs.google.com/spreadsheets/d/1OnADbTEmHO4HbQd1mmPchJXz502ONOCjLDTNHxKkdwo'))
-
+    
     edd_date_start = format(as.Date(startdate), "%m/%d/%Y")
     edd_date_end = format(as.Date(enddate), "%m/%d/%Y")
     
     g2 <- g %>%
       select(Scientificname, RowsID) %>%
-      filter(Scientificname %in% species_list) %>%
+      filter(word(Scientificname,1,2,' ') %in% species_list) %>%
       arrange(Scientificname)
-
-    natl_codes <- c('USFS','BLM', 'BLM ','fed','NPS',"USFW","DOD")
+    
+    # natl_codes <- c('USFS','BLM', 'BLM ','fed','NPS',"USFW","DOD")
     edd_df <- list()
     
-    #to do: 
+    #3.1: Iterate over the possible pages for all available EDDMapS records
     for (i in unique(g2$RowsID)){
-      print(paste0("Searching for: ",g2$Scientificname[g2$RowsID==i][1]," and synonyms", collapse = ""))
-    
-      #queries for verified records (US only)
-      bw_url_v <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
-                        "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                        "&subjectNumber=",i
-                        ,"&div=5&negative=0&reviewed=1&spatial=1",edd_loc
-                        ,'&IdentificationCredibility=verified'
-                        ,"&observationdatestart=", edd_date_start
-                        ,"&observationdateend=", edd_date_end
-                        ,"&length=",limit
-                        ,sep = "")
+      edd_sp_pages <- list()
       
-      #queries for 'credible' records (US only)
-      bw_url_c <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
-                        "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                        "&subjectNumber=",i
-                        ,"&div=5&negative=0&reviewed=1&spatial=1",edd_loc
-                        ,'&IdentificationCredibility=credible'
-                        ,"&observationdatestart=", edd_date_start
-                        ,"&observationdateend=", edd_date_end
-                        ,"&length=",limit
-                        ,sep = "")
+      tot_rec <- fromJSON(paste0("https://sandbox.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid",
+                                 "&include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
+                                 "&subjectNumber=",i
+                                 ,"&div=5&negative=0&reviewed=1&spatial=1"
+                                 ,"&length=1",edd_loc
+                                 ,sep=''),simplifyDataFrame = T)
       
-      #pulls records to be filtered for Federal Lands only (US only)
-      bw_url_f <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
-                        "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
-                        "&subjectNumber=",i
-                        ,"&div=5&negative=0&reviewed=1&spatial=1",edd_loc
-                        ,"&observationdatestart=", edd_date_start
-                        ,"&observationdateend=", edd_date_end
-                        ,"&length=",limit
-                        ,sep = "")
-
-      eddmaps_call_v <- fromJSON(unique(bw_url_v), simplifyDataFrame = T)
-      eddmaps_call_c <- fromJSON(unique(bw_url_c), simplifyDataFrame = T)
-      eddmaps_call_f <- fromJSON(unique(bw_url_c), simplifyDataFrame = T)
-
-
-      if(class(eddmaps_call_v$rows) == 'data.frame'){
-        if(nrow(eddmaps_call_v$rows > 0)){
-          edd_df <- rbind(edd_df, eddmaps_call_v$rows)
+      print(paste0(tot_rec$total," records found for ",g2$Scientificname[g2$RowsID==i][1], collapse = ""))
+      
+      
+      if(tot_rec$total > 0){
+        for (j in seq(1,  ceiling(tot_rec$total/3000),1)){
+          edd_sp_pages[[paste0(i,j)]] <- paste("https://sandbox.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
+                                               "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
+                                               "&subjectNumber=",i,edd_loc,
+                                               "&div=5&negative=0&reviewed=1&spatial=1&page=",j
+                                               ,sep = "")
+        }
+        
+        for (k in edd_sp_pages){
+          tmp <- fromJSON(k, simplifyDataFrame = T)
+          edd_df <- rbind(edd_df, tmp$rows)
         }
       }
-      if(class(eddmaps_call_c$rows) == 'data.frame'){
-        if(nrow(eddmaps_call_c$rows > 0)){
-          edd_df <- rbind(edd_df, eddmaps_call_c$rows)
-        }
-      }
-      if(class(eddmaps_call_f$rows) == 'data.frame'){
-        if(nrow(eddmaps_call_f$rows > 0)){
-          edd_df <- rbind(edd_df, eddmaps_call_f$rows %>% filter(national_ownership %in% natl_codes))
-        }
-      }
-      else {next}    
     }
 
     # 3.2 - format EDDMaps dataframe
     if (nrow(edd_df) > 0){
       edd_format <- edd_df %>%
-      filter(latitude_decimal != "") %>%
-      select(latitude_decimal, longitude_decimal, hostscientificname, Observationdate, scientificname, IdentificationCredibility
-        , national_ownership,local_ownership
-        ) %>%
-      mutate(DataSet = "EDDMapS",
-             decimalLatitude = as.numeric(latitude_decimal),
-             decimalLongitude = as.numeric(longitude_decimal),
-             source_sp_name = hostscientificname,
-             searched_term = scientificname,
-             ObsDate = as.Date(Observationdate),
-             ObsYear = as.integer(format(as.Date(Observationdate), "%Y"))
-             )
-
+        filter(latitude_decimal != "") %>%
+        select(latitude_decimal, longitude_decimal, hostscientificname, Observationdate, scientificname, IdentificationCredibility
+               , national_ownership,local_ownership) %>%
+        mutate(DataSet = "EDDMapS",
+               decimalLatitude = as.numeric(latitude_decimal),
+               decimalLongitude = as.numeric(longitude_decimal),
+               source_sp_name = hostscientificname,
+               searched_term = scientificname,
+               ObsDate = as.Date(Observationdate),
+               ObsYear = as.integer(format(as.Date(Observationdate), "%Y"))
+        )
+      
       edd_final <- edd_format %>%
         select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear, IdentificationCredibility
-          ,national_ownership,local_ownership
-          ) %>%
+               ,national_ownership,local_ownership
+        ) %>%
         unique()
-
+      
       df_list[['eddmaps']] <<- edd_final
-
+      
       print("EddMapS Search Complete!")
-
+      
     }  
   }
   closeAllConnections()

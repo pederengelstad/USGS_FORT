@@ -16,6 +16,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
   # 2. spocc (GBIF, BISON, iNaturalist, and EcoEngine) -------------------------
   
   # 2.1 - Query sources for species data over their global extent (can be restricted to U.S. with additional parameter)
+  #       What are the actual limits for GBIF and BISON record searches?
   #       Note 1: Search type for spocc is exact (???) 
   #       Note 2: depending on the number of species and databases queried, the occ() function may result in very long run-times (> 15 min), esp w/ ecoengine
   
@@ -23,17 +24,21 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
   
   #restrict records to US or leave search open to global records
   if(US_only==T){
-    
-    gbifopts <- c(gbifopts, country='US')
     edd_loc <- "&Country=926"
     
-    if(is.null(bisonopts)){
+    if(is.null(gbifopts)==T){
+      gbifopts <- list(country='US')
+    } else{
+      gbifopts <- c(gbif_options, country='US')
+    }
+    
+    if(is.null(bisonopts)==T){
       bisonopts <- list(params=c('countryCode: US')) #if no set options, generate variable
     }
-    if(is.null(bisonopts$params)){
+    if(is.null(bisonopts$params)==T){
       bisonopts <- c(bisonopts, params=c('countryCode: US')) #if params not included options, generate variable
     } else{
-      bisonopts <- paste0(bisonopts,'; countryCode: US') # if params are included, append countryCode search option
+      bisonopts$params <- paste0(bisonopts$params,'; countryCode: US') # if params are included, append countryCode search option
     }
   } else{
     edd_loc = ""

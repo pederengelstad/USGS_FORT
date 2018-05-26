@@ -50,6 +50,8 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
+# species_processing(sample(USDAexotic$Scientific.Name, size=10), USDA=F)
+
 species_processing(USDAexotic$Scientific.Name, USDA=F)
 
 
@@ -74,7 +76,7 @@ bison_options = list(params=c('basisOfRecord: specimen, observation'))
 
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 100000
+         , limit = 99999
          , bisonopts = bison_options          
          , startDate = startdate
          , endDate = enddate
@@ -94,12 +96,11 @@ source('./DataCleaning.R')
 
 Data_QAQC(df_list)
 
-test = occ_all %>%
-  select(DataSet, ITIS_AcceptedName) %>%
-  group_by(DataSet, ITIS_AcceptedName) %>%
+occ_all %>%
+  select(ITIS_AcceptedName) %>%
+  group_by(ITIS_AcceptedName) %>%
   summarize(count = n())
 
-head(test)
 # write.csv(occ_all, './BackgroundPointsPresence_Output.csv')
 ################################################################################
 

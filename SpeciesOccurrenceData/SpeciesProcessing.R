@@ -3,21 +3,43 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   library(ritis)
   library(taxize)
   library(tidyverse)
-
-  t <- bind_rows(terms(query = sp_list, wt = 'json'))
-
-  s = suppressMessages(synonyms_df(synonyms(t$tsn[match(sp_list, word(t$scientificName, 1, 2, " "))], db='itis', ask=F, message=F)))
-  s$ITISacceptedName =   ifelse(is.na(word(t$scientificName[match(s$acc_tsn, t$tsn)], 1, 2, " "))
-         						,word(s$acc_name,1,2," ")
-         						,word(t$scientificName[match(s$acc_tsn, t$tsn)], 1, 2, " "))
-  s$synonym_base = word(s$syn_name, 1, 2, " ")
   
-  sp_df <<- unique(s) %>%
+  t0 <- unique(bind_rows(terms(query=c(sp_list,"Pueraria montana"), wt='json')))
+  t0 <- t0[, c('nameUsage','scientificName','tsn')]
+  
+  t_check <- t0 %>%
+    group_by(name = t0$scientificName) %>%
+    summarise(count=n()) %>%
+    filter(count > 1)
+  
+  if(nrow(t_check) > 0){
+    t <- t0[!(t0$scientificName %in% t_check$name) | t0$nameUsage == 'accepted',]
+  } else{
+    t <- t0
+  }
+  
+  s <- suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F)))
+  s <- s %>%
+    left_join(t, by=c('acc_tsn'='tsn'))
+  
+  s$ITISacceptedName <- ifelse(is.na(s$scientificName),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))
+  # s$ITISaccepted_base <- word()
+  s$synonym_base <- word(s$syn_name,1,2,' ')
+  
+  sp_df <<- s %>%
     filter(nchar(word(ITISacceptedName, 2,2)) > 1) %>%
-    select(ITISacceptedName, synonym_base)
-
+    select(ITISacceptedName, synonym_base) %>%
+    unique()
+  
+  if(!is.null(sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))])){
+    for(i in sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))]){
+      sp_df <- rbind(sp_df,c(NA,i))
+    }
+  }
+  
   # 1.6 - synthesize full, unique species name list including synonyms but only include genus and species
-  species_search_list <<- unique(c(na.omit(sp_df$ITISacceptedName), na.omit(sp_df$synonym_base), word(sp_list, 1,2," ")))
+  species_search_list <<- unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base)))
+  
   
   if(USDA == TRUE){
     

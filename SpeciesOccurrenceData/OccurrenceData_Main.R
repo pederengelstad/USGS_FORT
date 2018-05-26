@@ -67,10 +67,12 @@ enddate <- as.Date(Sys.Date())
 df_list <- list()
 bison_options = list(params=c('basisOfRecord: specimen, observation'))
 
+occ()
+
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 100000
-         , bisonopts = bison_options          
+         , limit = 99999
+         , bisonopts = bison_options
          , startDate = startdate
          , endDate = enddate
          , US_only = T
@@ -89,10 +91,11 @@ source('./DataCleaning.R')
 
 Data_QAQC(df_list)
 
+occ_all
 occ_all %>%
   select(ITIS_AcceptedName) %>%
   group_by(ITIS_AcceptedName) %>%
   summarize(count = n())
 
-# write.csv(occ_all, './BackgroundPointsPresence_Output.csv')
+write.csv(occ_all, 'C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/FWS_OccurrenceData.csv')
 ################################################################################

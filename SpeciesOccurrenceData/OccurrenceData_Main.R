@@ -25,7 +25,7 @@ if(length(new.packages)) install.packages(new.packages)
 # devtools::install_github("ropensci/spocc")
 
 library(tidyverse)
-setwd('C:/Users/peder/Documents/USGS/Scripts/SpeciesOccurrenceData')
+setwd('~/USGS/Scripts/SpeciesOccurrenceData')
 
 ################################################################################
 #2. Check for synonyms from ITIS and develop a finalized species list
@@ -67,8 +67,6 @@ enddate <- as.Date(Sys.Date())
 df_list <- list()
 bison_options = list(params=c('basisOfRecord: specimen, observation'))
 
-occ()
-
 api_data(species_list = species_search_list
          , sources = api_sources
          , limit = 99999
@@ -91,7 +89,6 @@ source('./DataCleaning.R')
 
 Data_QAQC(df_list)
 
-occ_all
 occ_all %>%
   select(ITIS_AcceptedName) %>%
   group_by(ITIS_AcceptedName) %>%

@@ -23,10 +23,14 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     left_join(t, by=c('acc_tsn'='tsn'))
   
   s$ITISacceptedName <- ifelse(is.na(s$scientificName),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))
-  # s$ITISaccepted_base <- word()
-  s$synonym_base <- word(s$syn_name,1,2,' ')
   
-  sp_df <<- s %>%
+  if(!is.null(s$syn_name)){
+    s$synonym_base <- word(s$syn_name,1,2,' ')
+  } else {  
+    s$synonym_base <- NA
+  }
+  
+  sp_df <- s %>%
     filter(nchar(word(ITISacceptedName, 2,2)) > 1) %>%
     select(ITISacceptedName, synonym_base) %>%
     unique()
@@ -36,6 +40,8 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
       sp_df <- rbind(sp_df,c(NA,i))
     }
   }
+  
+  sp_df <<- sp_df[!sp_df$ITISacceptedName==sp_df$synonym_base,]
   
   # 1.6 - synthesize full, unique species name list including synonyms but only include genus and species
   species_search_list <<- unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base)))

@@ -6,17 +6,9 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   
   t0 <- unique(bind_rows(terms(query=sp_list, wt='json')))
   t0 <- t0[, c('nameUsage','scientificName','tsn')]
-  
-  t_check <- t0 %>%
-    group_by(name = t0$scientificName) %>%
-    summarise(count=n()) %>%
-    filter(count > 1)
-  
-  if(nrow(t_check) > 0){
-    t <- t0[!(t0$scientificName %in% t_check$name) | t0$nameUsage == 'accepted',]
-  } else{
-    t <- t0
-  }
+  t <- t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted'),]
+  nm_match <- grep(pattern = paste0(c('ssp','var'),collapse = '|'), x = t$scientificName, value=T)
+  t <- t[!(t$scientificName %in% nm_match),]
   
   s <- suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F)))
   s <- s %>%
@@ -31,7 +23,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   }
   
   sp_df <- s %>%
-    filter(nchar(word(ITISacceptedName, 2,2)) > 1) %>%
+    filter(nchar(word(ITISacceptedName, 2,2)) > 1 & nchar(word(synonym_base, 2,2)) > 1) %>%
     select(ITISacceptedName, synonym_base) %>%
     unique()
   
@@ -41,7 +33,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     }
   }
   
-  sp_df <<- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
+  sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
 
   
   # 1.6 - synthesize full, unique species name list including synonyms but only include genus and species
@@ -53,24 +45,47 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     print("Finding USDA species codes")
     
     for (i in 1:nrow(sp_df)){
-      j <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', word(sp_df[i,1],1,1),"&Species=",word(sp_df[i,1],2,2))), error=function(e) NULL)
-      k <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', word(sp_df[i,2],1,1),"&Species=",word(sp_df[i,2],2,2))), error=function(e) NULL) 
-      
-      if(is.null(j) & is.null(k)){
-        sp_df$usda_codes[i] <<- NA
-        next}
+      if(!is.na(sp_df[i,1])){
+        j <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', word(sp_df[i,1],1,1),"&Species=",word(sp_df[i,1],2,2))), error=function(e) NULL)
+      } else{
+        j <- NULL
+      }
 
-      else{
+      if(!is.na(sp_df[i,2])){
+        k <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', word(sp_df[i,2],1,1),"&Species=",word(sp_df[i,2],2,2))), error=function(e) NULL) 
+      } else {
+        k <- NULL
+      }
+
+      if(is.null(j) & is.null(k)){
+        sp_df$usda_codes[i] <- NA
+        next}
+      
+      if(!is.null(j)){
         a <- na.omit(unique(j$data$Accepted_Symbol_x))
         b <- str_split(na.omit(unique(subset(j$data$Synonym_Symbol_x, j$data$Synonym_Symbol_x != ""))), ', ')
+        
+      } else{
+        a <- NA
+        b <- NA
+      }
+
+      if(!is.null(k)){
         c <- na.omit(unique(k$data$Accepted_Symbol_x))
         d <- str_split(na.omit(unique(subset(k$data$Synonym_Symbol_x, j$data$Synonym_Symbol_x != ""))), ',')
-        
-        sp_df$usda_codes[i] <<- str_flatten(unique(c(a,b,c,d)), collapse = ", ")
+      } else {
+        c <- NA
+        d <- NA
       }
+      
+      vec <- unique(as.character(na.omit(c(as.character(a),as.character(b),as.character(c),as.character(d)))))
+      sp_df$usda_codes[i] <- str_flatten(vec, collapse = ", ")
     }
   }
+  
+  sp_df <<- sp_df[with(sp_df, order(ITISacceptedName,synonym_base)),]
+  
+  print("Species Processing Complete!")
+  
+  }
 
-print("Species Processing Complete!")
-
-}

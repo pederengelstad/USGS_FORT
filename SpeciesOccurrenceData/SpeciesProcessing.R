@@ -4,7 +4,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   library(taxize)
   library(tidyverse)
   
-  t0 <- unique(bind_rows(terms(query=c(sp_list,"Pueraria montana"), wt='json')))
+  t0 <- unique(bind_rows(terms(query=sp_list, wt='json')))
   t0 <- t0[, c('nameUsage','scientificName','tsn')]
   
   t_check <- t0 %>%

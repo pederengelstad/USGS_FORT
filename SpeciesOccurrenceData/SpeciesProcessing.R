@@ -41,7 +41,8 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     }
   }
   
-  sp_df <<- sp_df[!sp_df$ITISacceptedName==sp_df$synonym_base,]
+  sp_df <<- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
+
   
   # 1.6 - synthesize full, unique species name list including synonyms but only include genus and species
   species_search_list <<- unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base)))

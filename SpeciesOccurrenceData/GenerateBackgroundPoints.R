@@ -21,21 +21,23 @@ setwd('C:/Users/peder/Documents/USGS/Scripts/SpeciesOccurrenceData')
 # 1. Parse entire USDA plants database species list
 
 # read in hard copy of USDA plants database (full)
-dat <- read.csv('./USDA_FULL_LIST.txt')
-USDAexotic <- dat[grep('L48(I)', dat$Native.Status, fixed=TRUE),] # rolling count: 5100
+dat = read.csv('./USDA_FULL_LIST.txt', header = T, stringsAsFactors = F)
+
+USDAexotic = dat[grep('L48(I)', dat$Native.Status, fixed=TRUE),] # rolling count: 5100
 
 # drop the 1 word names:
-USDAexotic <- USDAexotic[str_count(USDAexotic$Scientific.Name, "\\s") != 0, ] # rolling count 4249
+USDAexotic = USDAexotic[str_count(USDAexotic$Scientific.Name, "\\s") != 0, ] # rolling count 4249
 
-# drop all ssp and var. terms (only want Genus and species)
-USDAexotic$Scientific.Name <- word(string = USDAexotic$Scientific.Name, start = 1, end = 2, sep = " ")
+# drop all ssp and var. terms (want records with only Genus and species to avoid search confusion)
+USDAexotic = USDAexotic[str_count(USDAexotic$Scientific.Name, '\\S+') <= 2,] # rolling count 3840
 
 ## Remove names without the special x character denoting hybrids
-USDAexotic <- USDAexotic[!str_detect(string = USDAexotic$Scientific.Name, pattern = 'Ã'),] # rolling count: 4120
+USDAexotic = USDAexotic[!str_detect(string = USDAexotic$Scientific.Name, pattern = 'Ã'),] # rolling count: 3714
 
-# De-duplicate names
-USDAexotic = USDAexotic[-which(duplicated(USDAexotic$Scientific.Name)), ] # final count: 3774
-
+# De-duplicate records: none found
+USDAexotic <- USDAexotic %>%
+  select(Scientific.Name, Native.Status) %>%
+  unique()
 
 ################################################################################
 #2. Check for synonyms from ITIS and develop a finalized species list

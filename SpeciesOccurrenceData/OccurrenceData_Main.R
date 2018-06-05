@@ -13,7 +13,7 @@
 #
 # Authors: Peder Engelstad (adapted from work by Helen Sofaer)
 # Contact: pengel@colostate.edu
-# Last Updated: 5/24/2018
+# Last Updated: 06/04/2018
 
 
 
@@ -40,10 +40,12 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
-sp_list = suppressWarnings(readLines('C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/fws_specieslist.txt'))
+# sp_list = suppressWarnings(readLines('C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/fws_specieslist.txt'))
+sp_list = c('Taeniatherum caput-medusae','Cenchrus setaceus','Oplismenus undulatifolius')
 
-species_processing(sp_list, USDA=F)
-
+species_processing(sp_list, USDA=T)
+sp_df
+sort(species_search_list)
 
 ################################################################################
 #3. Pull data from API Sources
@@ -68,16 +70,31 @@ df_list <- list()
 bison_options = list(params=c('basisOfRecord: specimen, observation'))
 
 api_data(species_list = species_search_list
-         , sources = api_sources
+         , sources = c('eddmaps')
          , limit = 99999
          , bisonopts = bison_options
          , startDate = startdate
          , endDate = enddate
-         , US_only = T
+         , US_only = F
 )
 
+########################################################################################################
+# Add data from .csv or .txt files; choose from 'blm_aim', 'blm_lmf', 'nisims' or a vector of 2+
+# Requires: sp_df and species_search_list objects!!!
+# Note: AIM and LMF records without a date will be given the current date
 
-################################################################################
+source('./DataFromFiles.R')
+aim_file = '~/USGS/Data/BLM/AIM.allsp.pnts.May2018.csv'
+lmf_file = '~/USGS/Data/BLM/LMF.allsp.csv'
+nisims_nps_file = '~/USGS/Data/NISIMS/NISIMS_Presences_05312018.csv'
+nisims_blm_file = '~/USGS/Data/NISIMS/WeedInfestationData_Large.csv'
+
+AddDataFromFiles(aim_file_loc = aim_file,
+                 lmf_file_loc = lmf_file,
+                 nisims_nps_file_loc = nisims_nps_file,
+                 nisims_blm_file_loc = nisims_blm_file)
+
+########################################################################################################
 #4. Perform QA/QC on occurrence records
 source('./DataCleaning.R')
 
@@ -89,10 +106,11 @@ source('./DataCleaning.R')
 
 Data_QAQC(df_list)
 
-occ_all %>%
-  select(ITIS_AcceptedName) %>%
-  group_by(ITIS_AcceptedName) %>%
+
+occ_merged %>%
+  select(searched_term) %>%
+  group_by(searched_term) %>%
   summarize(count = n())
 
-write.csv(occ_all, 'C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/FWS_OccurrenceData.csv')
+write.csv(occ_all, 'C:/Users/peder/Documents/USGS/Top3_20180531.csv')
 ################################################################################

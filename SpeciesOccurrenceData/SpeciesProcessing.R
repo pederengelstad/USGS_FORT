@@ -3,6 +3,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   library(ritis)
   library(taxize)
   library(tidyverse)
+  library(jsonlite)
   
   t0 <- unique(bind_rows(terms(query=sp_list, wt='json')))
   t0 <- t0[, c('nameUsage','scientificName','tsn')]

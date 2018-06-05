@@ -14,7 +14,7 @@ Data_QAQC <- function(data=NULL){
       dplyr::select(DataSet, source_sp_name, searched_term, decimalLatitude,decimalLongitude, ObsDate, ObsYear,IdentificationCredibility,national_ownership,local_ownership) %>%
       dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns
       dplyr::filter(word(searched_term,1,2,' ') %in% sp_df$ITISacceptedName | word(searched_term,1,2,' ') %in% sp_df$synonym_base)
-  } else{
+  }else{
     occ_filter <<- occ_merged %>%
       dplyr::select(DataSet, source_sp_name, searched_term, decimalLatitude,decimalLongitude, ObsDate, ObsYear) %>%
       dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns

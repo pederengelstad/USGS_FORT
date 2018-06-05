@@ -44,7 +44,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     edd_loc = ""
   }
   
-  
+  # is there a way for this to print out each species as they get processed?
   if(length(v[which(v%in%sources)]) > 0) {
     
     print('Searching GBIF/BISON/iNaturalist/EcoEngine for occurrence records')

@@ -78,7 +78,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
       unique()
     
     
-    df_list[['BLM_LMF']] <<- aim_parse
+    df_list[['BLM_LMF']] <<- lmf_final
   }
 
 
@@ -94,7 +94,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
   # 2. remove data without coordinates
   # 3. separate lat and long (starts in Albers Equal Area); note that there are many ways this regex might not work--look for NAs!
 
-    N_BLM_PARSE <- NISIMS_NPS %>%
+    NPS_PARSE <- NISIMS_NPS %>%
       select(SCNTFC_CD, CNTR_PT_CN, BEGIN_DT)%>%
       filter(CNTR_PT_CN != '' & SCNTFC_CD %in% code_list & BEGIN_DT >= startdate & BEGIN_DT <= enddate) %>%
       mutate(DataSet = "NISIMS_NPS"
@@ -108,21 +108,21 @@ AddDataFromFiles = function(aim_file_loc = NULL
       select(DataSet, albersLatitude, albersLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
       unique()
     
-    sf.point <- st_as_sf(x=N_BLM_PARSE
+    sf.point <- st_as_sf(x=NPS_PARSE
                          , coords = c("albersLatitude","albersLongitude")
                          , crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
     
-    nisims_reproj <- sf::st_transform(sf.point, crs = 4326)
+    nisims_reproj_NPS <- sf::st_transform(sf.point, crs = 4326)
     
-    nisims_df <- as.data.frame(nisims_reproj) %>%
-      mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
-             decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
+    nisims_df_NPS <- as.data.frame(nisims_reproj_NPS) %>%
+      mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
+             decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
     
-    nisims_final <- nisims_df %>%
+    nisims_final_NPS <- nisims_df_NPS %>%
       select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
       unique()
     
-    df_list[['nisims_nps']] <<- nisims_final
+    df_list[['nisims_nps']] <<- nisims_final_NPS
   }
 
   ################################################################################################################
@@ -156,11 +156,11 @@ AddDataFromFiles = function(aim_file_loc = NULL
       mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
              decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
     
-    nisims_final <- nisims_df %>%
+    nisims_final_BLM <- nisims_df_BLM %>%
       select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
       unique()
     
-    df_list[['nisims_blm']] <<- nisims_final
+    df_list[['nisims_blm']] <<- nisims_final_BLM
     
   }
 }

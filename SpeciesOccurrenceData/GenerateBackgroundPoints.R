@@ -12,8 +12,9 @@ list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","sc
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
-# !!! if you don't already have the latest version of spocc from github, uncomment the line below and run !!!
+# !!! if you don't already have the latest version of spocc and/or taxize from github, uncomment the line below and run !!!
 # devtools::install_github("ropensci/spocc")
+# devtools::install_github("ropensci/taxize")
 
 library(tidyverse)
 setwd('C:/Users/peder/Documents/USGS/Scripts/SpeciesOccurrenceData')
@@ -54,7 +55,10 @@ source('./SpeciesProcessing.R')
 
 # species_processing(sample(USDAexotic$Scientific.Name, size=10), USDA=F)
 
-species_processing(USDAexotic$Scientific.Name, USDA=F)
+for(i in USDAexotic$Scientific.Name){
+  print(i)
+  species_processing(i, USDA=F)
+}
 
 
 ################################################################################

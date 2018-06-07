@@ -5,36 +5,36 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   library(tidyverse)
   library(jsonlite)
   
-  t0 <- unique(bind_rows(terms(query=sp_list, wt='json')))
-  t0 <- t0[, c('nameUsage','scientificName','tsn')]
-  t <- t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted'),]
-  nm_match <- grep(pattern = paste0(c('ssp','var'),collapse = '|'), x = t$scientificName, value=T)
-  t <- t[!(t$scientificName %in% nm_match),]
+  t0 = unique(bind_rows(get_tsn_(searchterm = sort(sp_list),accepted = F, messages = T)))
+  t0 <<- t0[, c('nameUsage','scientificName','tsn')]
+  t = t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted'),]
   
-  s <- suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F)))
-  s <- s %>%
+  #make sure name variations are dropped (i.e. var.; ssp.; cv. and so on)
+  t = t0[str_count(t0$scientificName, '\\s') <= 2,]
+  
+  s0 = suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))
+  s = s0 %>%
     left_join(t, by=c('acc_tsn'='tsn'))
   
-  s$ITISacceptedName <- ifelse(is.na(s$scientificName),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))
+  s$ITISacceptedName = ifelse(is.na(s$scientificName),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))
   
   if(!is.null(s$syn_name)){
-    s$synonym_base <- word(s$syn_name,1,2,' ')
+    s$synonym_base = word(s$syn_name,1,2,' ')
   } else {  
-    s$synonym_base <- NA
+    s$synonym_base = NA
   }
   
-  sp_df <- s %>%
-    filter(nchar(word(ITISacceptedName, 2,2)) > 1 & nchar(word(synonym_base, 2,2)) > 1) %>%
+  sp_df = s %>%
     select(ITISacceptedName, synonym_base) %>%
     unique()
   
   if(!is.null(sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))])){
     for(i in sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))]){
-      sp_df <- rbind(sp_df,c(NA,i))
+      sp_df = rbind(sp_df,c(NA,i))
     }
   }
   
-  sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
+  sp_df <<- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
 
   
   # 1.6 - synthesize full, unique species name list including synonyms but only include genus and species

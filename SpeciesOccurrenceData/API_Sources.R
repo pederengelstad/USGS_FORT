@@ -159,7 +159,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     for (i in unique(g2$RowsID)){
       edd_sp_pages <- list()
       
-      tot_rec <- fromJSON(paste0("https://sandbox.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid",
+      tot_rec <- fromJSON(paste0("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid",
                                  "&include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
                                  "&subjectNumber=",i
                                  ,"&div=5&negative=0&reviewed=1&spatial=1"
@@ -171,7 +171,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
       
       if(tot_rec$total > 0){
         for (j in seq(1,  ceiling(tot_rec$total/3000),1)){
-          edd_sp_pages[[paste0(i,j)]] <- paste("https://sandbox.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
+          edd_sp_pages[[paste0(i,j)]] <- paste("https://api.bugwood.org/rest/api/occurrence.json?&fmt=jqgrid&",
                                                "include=National_Ownership,Local_Ownership,ObservationDate,scientificname,Latitude_Decimal,Longitude_Decimal,IdentificationCredibility,Country",  # include the fields you want returned
                                                "&subjectNumber=",i,edd_loc,
                                                "&div=5&negative=0&reviewed=1&spatial=1&page=",j

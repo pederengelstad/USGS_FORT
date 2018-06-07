@@ -21,8 +21,9 @@ list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","sc
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
-# !!! if you don't already have the latest version of spocc from github, uncomment the line below and run !!!
+# !!! if you don't already have the latest version of spocc and/or taxize from github, uncomment the line below and run !!!
 # devtools::install_github("ropensci/spocc")
+# devtools::install_github("ropensci/taxize")
 
 library(tidyverse)
 setwd('~/USGS/Scripts/SpeciesOccurrenceData')
@@ -41,7 +42,8 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines('C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/fws_specieslist.txt'))
-sp_list = c('Taeniatherum caput-medusae','Cenchrus setaceus','Oplismenus undulatifolius')
+sp_list = c('Taeniatherum caput-medusae','Cenchrus setaceus','Oplismenus undulatifolius', 'Tripidium ravennae'
+            ,'Saccharum ravennae', 'Amaranthus graecizans', 'Chenopodium humile')
 
 species_processing(sp_list, USDA=T)
 sp_df
@@ -70,13 +72,19 @@ df_list <- list()
 bison_options = list(params=c('basisOfRecord: specimen, observation'))
 
 api_data(species_list = species_search_list
-         , sources = c('eddmaps')
+         , sources = 'eddmaps'
          , limit = 99999
          , bisonopts = bison_options
          , startDate = startdate
          , endDate = enddate
          , US_only = F
 )
+
+df_list$spocc %>%
+  filter(DataSet=='gbif') %>%
+  select(searched_term) %>%
+  group_by(searched_term) %>%
+  summarize(count = n())
 
 ########################################################################################################
 # Add data from .csv or .txt files; choose from 'blm_aim', 'blm_lmf', 'nisims' or a vector of 2+
@@ -94,6 +102,14 @@ AddDataFromFiles(aim_file_loc = aim_file,
                  nisims_nps_file_loc = nisims_nps_file,
                  nisims_blm_file_loc = nisims_blm_file)
 
+nrow(df_list$spocc[df_list$spocc$DataSet=='gbif',])
+nrow(df_list$eddmaps)
+nrow(df_list$BLM_AIM)
+nrow(df_list$BLM_LMF)
+nrow(df_list$nisims_nps)
+nrow(df_list$nisims_blm)
+
+
 ########################################################################################################
 #4. Perform QA/QC on occurrence records
 source('./DataCleaning.R')
@@ -107,10 +123,10 @@ source('./DataCleaning.R')
 Data_QAQC(df_list)
 
 
-occ_merged %>%
-  select(searched_term) %>%
-  group_by(searched_term) %>%
+occ_all %>%
+  select(ITIS_AcceptedName) %>%
+  group_by(ITIS_AcceptedName) %>%
   summarize(count = n())
 
-write.csv(occ_all, 'C:/Users/peder/Documents/USGS/Top3_20180531.csv')
+write.csv(occ_all, 'C:/Users/peder/Documents/USGS/Top4_20180531.csv')
 ################################################################################

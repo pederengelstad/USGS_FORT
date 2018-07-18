@@ -5,7 +5,7 @@
 # Affiliation: Colorado State University
 # Contact: pengel@colostate.edu
 # Origin Date: 3/7/2018
-# Last Edited: 5/7/2018
+# Last Edited: 7/18/2018
 # Purpose: Download and combine species occurrence data, perform QA/QC, and export to CSV
 # Script Purpose: 1. Determine all species considered invasive from USDA. 
 #                 2. Pull occurrence records from API data sources.
@@ -13,7 +13,6 @@
 #
 # Authors: Peder Engelstad (adapted from work by Helen Sofaer)
 # Contact: pengel@colostate.edu
-# Last Updated: 06/04/2018
 
 
 
@@ -42,8 +41,7 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines('C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/fws_specieslist.txt'))
-sp_list = c('Taeniatherum caput-medusae','Cenchrus setaceus','Oplismenus undulatifolius', 'Tripidium ravennae'
-            ,'Saccharum ravennae', 'Amaranthus graecizans', 'Chenopodium humile')
+sp_list = c('Oplismenus undulatifolius', "Pueraria montana")
 
 species_processing(sp_list, USDA=T)
 sp_df
@@ -90,6 +88,7 @@ df_list$spocc %>%
 # Add data from .csv or .txt files; choose from 'blm_aim', 'blm_lmf', 'nisims' or a vector of 2+
 # Requires: sp_df and species_search_list objects!!!
 # Note: AIM and LMF records without a date will be given the current date
+# Coordinate transform is currently buggy. Fix upcoming!
 
 source('./DataFromFiles.R')
 aim_file = '~/USGS/Data/BLM/AIM.allsp.pnts.May2018.csv'
@@ -101,14 +100,6 @@ AddDataFromFiles(aim_file_loc = aim_file,
                  lmf_file_loc = lmf_file,
                  nisims_nps_file_loc = nisims_nps_file,
                  nisims_blm_file_loc = nisims_blm_file)
-
-nrow(df_list$spocc[df_list$spocc$DataSet=='gbif',])
-nrow(df_list$eddmaps)
-nrow(df_list$BLM_AIM)
-nrow(df_list$BLM_LMF)
-nrow(df_list$nisims_nps)
-nrow(df_list$nisims_blm)
-
 
 ########################################################################################################
 #4. Perform QA/QC on occurrence records
@@ -129,4 +120,13 @@ occ_all %>%
   summarize(count = n())
 
 write.csv(occ_all, 'C:/Users/peder/Documents/USGS/Top4_20180531.csv')
+
+########################################################################################################
+# 5. Quickly view species of interest on a map for QA purposes (in dev)
+# devtools::install_github('ropensci/mapr')
+
+library(mapr)
+spatial_occ <- sp::SpatialPoints(occ_all[,4:5], proj4string = CRS("+init=epsg:4326"))
+mapr::map_leaflet(spatial_occ)
+
 ################################################################################

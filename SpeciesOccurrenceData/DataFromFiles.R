@@ -63,22 +63,29 @@ AddDataFromFiles = function(aim_file_loc = NULL
       select(DataSet, decimalLatitude_NAD83, decimalLongitude_NAD83, ObsDate, ObsYear, source_sp_name, searched_term)
     
     # convert from NAD83 to WGS84
-    sf.point_lmf <- st_as_sf(x=lmf_parse
-                             , coords = c("decimalLatitude_NAD83","decimalLongitude_NAD83")
-                             , crs = 4269)
+    n = nrow(lmf_parse)
+    if(n > 0){
+      
+      sf.point_lmf <- st_as_sf(x=lmf_parse
+                               , coords = c("decimalLatitude_NAD83","decimalLongitude_NAD83")
+                               , crs = 4269)
+      
+      lmf_reproj <- sf::st_transform(sf.point_lmf, crs = 4326)
+      
+      lmf_df <- as.data.frame(lmf_reproj) %>%
+        mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(lmf_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
+               decimalLatitude = as.numeric(lapply(str_extract_all(as.character(lmf_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
+      
+      lmf_final <- lmf_df %>%
+        select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
+        unique()
+      
+      
+      df_list[['BLM_LMF']] <<- lmf_final  
+    } else {
+      print("No records found in LMF file.")
+    }
     
-    lmf_reproj <- sf::st_transform(sf.point_lmf, crs = 4326)
-    
-    lmf_df <- as.data.frame(lmf_reproj) %>%
-      mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(lmf_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
-             decimalLatitude = as.numeric(lapply(str_extract_all(as.character(lmf_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
-    
-    lmf_final <- lmf_df %>%
-      select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
-      unique()
-    
-    
-    df_list[['BLM_LMF']] <<- lmf_final
   }
 
 
@@ -108,21 +115,29 @@ AddDataFromFiles = function(aim_file_loc = NULL
       select(DataSet, albersLatitude, albersLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
       unique()
     
-    sf.point <- st_as_sf(x=NPS_PARSE
-                         , coords = c("albersLatitude","albersLongitude")
-                         , crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+    n = nrow(NPS_PARSE)
     
-    nisims_reproj_NPS <- sf::st_transform(sf.point, crs = 4326)
+    if(n > 0){
+      
+      sf.point <- st_as_sf(x=NPS_PARSE
+                           , coords = c("albersLatitude","albersLongitude")
+                           , crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+      
+      nisims_reproj_NPS <- sf::st_transform(sf.point, crs = 4326)
+      
+      nisims_df_NPS <- as.data.frame(nisims_reproj_NPS) %>%
+        mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
+               decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
+      
+      nisims_final_NPS <- nisims_df_NPS %>%
+        select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
+        unique()
+      
+      df_list[['nisims_nps']] <<- nisims_final_NPS  
+    } else {
+      print("No records found in NISIMS_NPS file.")
+    }
     
-    nisims_df_NPS <- as.data.frame(nisims_reproj_NPS) %>%
-      mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
-             decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
-    
-    nisims_final_NPS <- nisims_df_NPS %>%
-      select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
-      unique()
-    
-    df_list[['nisims_nps']] <<- nisims_final_NPS
   }
 
   ################################################################################################################
@@ -146,21 +161,26 @@ AddDataFromFiles = function(aim_file_loc = NULL
       select(DataSet, albersLatitude, albersLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
       unique()
     
-    sf.point_BLM <- st_as_sf(x=N_BLM_PARSE
-                         , coords = c("albersLatitude","albersLongitude")
-                         , crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
-    
-    nisims_reproj_BLM <- st_transform(sf.point_BLM, crs = 4326)
-    
-    nisims_df_BLM <- as.data.frame(nisims_reproj_BLM) %>%
-      mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
-             decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
-    
-    nisims_final_BLM <- nisims_df_BLM %>%
-      select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
-      unique()
-    
-    df_list[['nisims_blm']] <<- nisims_final_BLM
-    
+    n = nrow(N_BLM_PARSE)
+    if(n > 0){
+      
+      sf.point_BLM <- st_as_sf(x=N_BLM_PARSE
+                               , coords = c("albersLatitude","albersLongitude")
+                               , crs = "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs")
+      
+      nisims_reproj_BLM <- st_transform(sf.point_BLM, crs = 4326)
+      
+      nisims_df_BLM <- as.data.frame(nisims_reproj_BLM) %>%
+        mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
+               decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
+      
+      nisims_final_BLM <- nisims_df_BLM %>%
+        select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
+        unique()
+      
+      df_list[['nisims_blm']] <<- nisims_final_BLM 
+    } else {
+      print("No records found in NISIMS_BLM file.")
+    }
   }
 }

@@ -21,8 +21,9 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   # drop names that aren't in the original search list or are 'accepted'. this speeds up synonym search time.
   t = t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted'),]
   
-  # make sure name variations are dropped (i.e. var.; ssp.; cv. and so on)
-  t = t0[str_count(t0$scientificName, '\\s') <= 2,]
+  # not currently using this line because ITIS sometimes won't find synonyms without very specific TSNs
+  # base names will match the original searched term, thankfully
+  # t = t0[str_count(t0$scientificName, '\\s') <= 2,]
   
   # find synonyms using function from the taxize library (make sure to have most recent build!)
   s0 = suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))

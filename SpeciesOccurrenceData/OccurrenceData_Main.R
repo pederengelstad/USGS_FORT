@@ -130,13 +130,17 @@ write.csv(occ_all, 'C:/Users/peder/Documents/USGS/TopFour_20180724_Global.csv')
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes
 library(leaflet)
+library(viridis)
 csv = read.csv("~/USGS/TopFour_20180724_US_only.csv", header=T, stringsAsFactors = F)
-csv = csv[csv$ITIS_AcceptedName=='Oplismenus undulatifolius',]
-unique(csv$ITIS_AcceptedName)
+n = length(unique(csv$ITIS_AcceptedName))
+pal = colorFactor(rainbow(n), csv$ITIS_AcceptedName)
+
+# csv = csv[csv$ITIS_AcceptedName=='Oplismenus undulatifolius',]
 spatial_occ <- SpatialPointsDataFrame(data = csv, coords = csv[c('latitude','longitude')],proj4string = CRS("+init=epsg:4326"))
 
 m <- leaflet(data=spatial_occ) %>%
-  addTiles() %>%  # Add default OpenStreetMap map tiles
-  addCircleMarkers(lng=~longitude, lat=~latitude)
+  addTiles("https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png") %>%  # Add default OpenStreetMap map tiles
+  addCircleMarkers(lng=~longitude, lat=~latitude, fillColor= ~pal(ITIS_AcceptedName), stroke=F, fillOpacity=0.8, radius = 2.8) %>%
+  addLegend("topright", pal = pal, values = ~ITIS_AcceptedName, labels = "Species ", title = "Invasive Species")
 m  # Print the map
 ################################################################################

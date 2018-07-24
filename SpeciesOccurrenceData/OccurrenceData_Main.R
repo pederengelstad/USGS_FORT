@@ -5,10 +5,10 @@
 # Affiliation: Colorado State University
 # Contact: pengel@colostate.edu
 # Origin Date: 3/7/2018
-# Last Edited: 7/18/2018
+# Last Edited: 7/24/2018
 # Purpose: Download and combine species occurrence data, perform QA/QC, and export to CSV
 # Script Purpose: 1. Determine all species considered invasive from USDA. 
-#                 2. Pull occurrence records from API data sources.
+#                 2. Pull occurrence records from API and hard-coded data sources.
 #                 3. Generate background point data based on lat-longs from occurrence records
 #
 # Authors: Peder Engelstad (adapted from work by Helen Sofaer)
@@ -27,6 +27,10 @@ if(length(new.packages)) install.packages(new.packages)
 library(tidyverse)
 setwd('~/USGS/Scripts/SpeciesOccurrenceData')
 
+# !!! make sure you have the latest version of the source scripts to run the following lines
+# download.file(url="https://github.com/pederengelstad/USGS_FORT/archive/master.zip",destfile = 'OccScripts.zip', method = "curl")
+# unzip('OccScripts.zip', overwrite = TRUE)
+
 ################################################################################
 #2. Check for synonyms from ITIS and develop a finalized species list
 
@@ -41,9 +45,10 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines('C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/fws_specieslist.txt'))
-sp_list = c('Oplismenus undulatifolius', "Pueraria montana")
+sp_list = c('Taeniatherum caput-medusae','Cenchrus setaceus',
+            'Tripidium ravennae','Oplismenus undulatifolius')
 
-species_processing(sp_list, USDA=T)
+species_processing(sort(sp_list), USDA=T)
 sp_df
 sort(species_search_list)
 
@@ -70,7 +75,7 @@ df_list <- list()
 bison_options = list(params=c('basisOfRecord: specimen, observation'))
 
 api_data(species_list = species_search_list
-         , sources = 'eddmaps'
+         , sources = api_sources
          , limit = 99999
          , bisonopts = bison_options
          , startDate = startdate
@@ -78,19 +83,19 @@ api_data(species_list = species_search_list
          , US_only = F
 )
 
-df_list$spocc %>%
-  filter(DataSet=='gbif') %>%
-  select(searched_term) %>%
-  group_by(searched_term) %>%
-  summarize(count = n())
+# df_list$spocc %>%
+#   filter(DataSet=='gbif') %>%
+#   select(searched_term) %>%
+#   group_by(searched_term) %>%
+#   summarize(count = n())
 
 ########################################################################################################
 # Add data from .csv or .txt files; choose from 'blm_aim', 'blm_lmf', 'nisims' or a vector of 2+
 # Requires: sp_df and species_search_list objects!!!
 # Note: AIM and LMF records without a date will be given the current date
-# Coordinate transform is currently buggy. Fix upcoming!
 
 source('./DataFromFiles.R')
+
 aim_file = '~/USGS/Data/BLM/AIM.allsp.pnts.May2018.csv'
 lmf_file = '~/USGS/Data/BLM/LMF.allsp.csv'
 nisims_nps_file = '~/USGS/Data/NISIMS/NISIMS_Presences_05312018.csv'
@@ -119,14 +124,19 @@ occ_all %>%
   group_by(ITIS_AcceptedName) %>%
   summarize(count = n())
 
-write.csv(occ_all, 'C:/Users/peder/Documents/USGS/Top4_20180531.csv')
+
+write.csv(occ_all, 'C:/Users/peder/Documents/USGS/TopFour_20180724_Global.csv')
 
 ########################################################################################################
-# 5. Quickly view species of interest on a map for QA purposes (in dev)
-# devtools::install_github('ropensci/mapr')
+# 5. Quickly view species of interest on a map for QA purposes
+library(leaflet)
+csv = read.csv("~/USGS/TopFour_20180724_US_only.csv", header=T, stringsAsFactors = F)
+csv = csv[csv$ITIS_AcceptedName=='Oplismenus undulatifolius',]
+unique(csv$ITIS_AcceptedName)
+spatial_occ <- SpatialPointsDataFrame(data = csv, coords = csv[c('latitude','longitude')],proj4string = CRS("+init=epsg:4326"))
 
-library(mapr)
-spatial_occ <- sp::SpatialPoints(occ_all[,4:5], proj4string = CRS("+init=epsg:4326"))
-mapr::map_leaflet(spatial_occ)
-
+m <- leaflet(data=spatial_occ) %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  addCircleMarkers(lng=~longitude, lat=~latitude)
+m  # Print the map
 ################################################################################

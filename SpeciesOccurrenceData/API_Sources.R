@@ -60,7 +60,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     
     if(sum(sapply(spocc_df$gbif$data, NROW)) > 0){
       gbif_df <- as.data.frame(occ2df(spocc_df$gbif)) %>%
-        filter(basisOfRecord %in% c("PRESERVED_SPECIMEN", "HUMAN_OBSERVATION", "OBSERVATION")) %>%
+        filter(!({if('habitat' %in% names(.)) habitat} %in% 'cultivated') & basisOfRecord %in% c("PRESERVED_SPECIMEN", "HUMAN_OBSERVATION", "OBSERVATION")) %>%
         select(prov, name, longitude, latitude, eventDate, year, scientificName) %>%
         mutate(DataSet = prov,
                decimalLatitude = as.numeric(latitude),

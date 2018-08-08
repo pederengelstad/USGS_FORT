@@ -25,7 +25,7 @@ if(length(new.packages)) install.packages(new.packages)
 # devtools::install_github("ropensci/taxize")
 
 library(tidyverse)
-setwd('~/USGS/Scripts/SpeciesOccurrenceData')
+setwd('~/GitHub/USGS_FORT/SpeciesOccurrenceData/')
 
 # !!! make sure you have the latest version of the source scripts to run the following lines
 # download.file(url="https://github.com/pederengelstad/USGS_FORT/archive/master.zip",destfile = 'OccScripts.zip', method = "curl")
@@ -45,8 +45,7 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines('C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/fws_specieslist.txt'))
-sp_list = c('Taeniatherum caput-medusae','Cenchrus setaceus',
-            'Tripidium ravennae','Oplismenus undulatifolius')
+sp_list = c('Tamarix', 'Elaeagnus angustifolia', 'Ulmus pumila')
 
 species_processing(sort(sp_list), USDA=T)
 sp_df

@@ -124,13 +124,13 @@ occ_all %>%
   summarize(count = n())
 
 
-write.csv(occ_all, 'C:/Users/peder/Documents/USGS/TopFour_20180724_Global.csv')
+write.csv(occ_all, 'C:/Users/peder/Documents/USGS/ThreeSpRequest_20180808.csv')
 
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes
 library(leaflet)
 library(viridis)
-csv = read.csv("~/USGS/TopFour_20180724_US_only.csv", header=T, stringsAsFactors = F)
+csv = read.csv("~/USGS/ThreeSpRequest_20180808.csv", header=T, stringsAsFactors = F)
 n = length(unique(csv$ITIS_AcceptedName))
 pal = colorFactor(rainbow(n), csv$ITIS_AcceptedName)
 

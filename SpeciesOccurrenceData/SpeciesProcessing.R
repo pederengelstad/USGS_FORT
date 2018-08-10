@@ -74,13 +74,17 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     
     for (i in 1:nrow(sp_df)){
       if(!is.na(sp_df[i,1])){
-        j <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', word(sp_df[i,1],1,1),"&Species=",word(sp_df[i,1],2,2))), error=function(e) NULL)
+        tmp_genus = ifelse(is.na(word(sp_df[i,1],1,1)), '', word(sp_df[i,1],1,1))
+        tmp_sp = ifelse(is.na(word(sp_df[i,1],2,2)), '', word(sp_df[i,1],2,2))
+    j <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', tmp_genus,"&Species=",tmp_sp)), error=function(e) NULL)
       } else{
         j <- NULL
       }
 
       if(!is.na(sp_df[i,2])){
-        k <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', word(sp_df[i,2],1,1),"&Species=",word(sp_df[i,2],2,2))), error=function(e) NULL) 
+        tmp_genus = ifelse(is.na(word(sp_df[i,2],1,1)), '', word(sp_df[i,2],1,1))
+        tmp_sp = ifelse(is.na(word(sp_df[i,2],2,2)), '', word(sp_df[i,2],2,2))
+        k <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', tmp_genus,"&Species=",tmp_sp)), error=function(e) NULL)
       } else {
         k <- NULL
       }
@@ -100,7 +104,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
 
       if(!is.null(k)){
         c <- na.omit(unique(k$data$Accepted_Symbol_x))
-        d <- str_split(na.omit(unique(subset(k$data$Synonym_Symbol_x, j$data$Synonym_Symbol_x != ""))), ',')
+        d <- str_split(na.omit(unique(subset(k$data$Synonym_Symbol_x, k$data$Synonym_Symbol_x != ""))), ',')
       } else {
         c <- NA
         d <- NA

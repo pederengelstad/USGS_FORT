@@ -1,5 +1,8 @@
 #a function to quickly and cleanly grab data from non-API sources
 #  right now, it's currently requested to not filter AIM and LMF for NA dates
+
+#to do: verify that all points from NISIMS are being transformed properly.
+
 require('tidyverse')
 require('sf')
 

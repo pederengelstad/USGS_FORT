@@ -59,8 +59,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     }
   }
   
-  sp_df <<- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
-
+  sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
   
   # synthesize full, unique species name list including synonyms
   species_search_list <<- unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base)))
@@ -115,7 +114,10 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     }
   }
   
-  sp_df <<- sp_df[with(sp_df, order(ITISacceptedName,synonym_base)),]
+  sp_df <- sp_df[with(sp_df, order(ITISacceptedName,synonym_base)),]
+  
+  #make sure that the data frame does not contain rows with only NAs
+  sp_df <<- sp_df[rowSums(is.na(sp_df)) != ncol(sp_df),]
   
   print("Species Processing Complete!")
   

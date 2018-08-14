@@ -39,10 +39,10 @@ AddDataFromFiles = function(aim_file_loc = NULL
              ObsYear = as.integer(VisitYear),
              source_sp_name = code) %>%
       mutate(ObsDate = as.Date(Date)) %>%
-      unique() %>%
       rowwise() %>%
-      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])) %>%
-      select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term)
+      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
+      select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
+      unique()
     
     df_list[['BLM_AIM']] <<- aim_parse
   }
@@ -63,10 +63,10 @@ AddDataFromFiles = function(aim_file_loc = NULL
              ObsDate = as.Date(VisitDate),
              ObsYear = as.integer(VisitYear),
              source_sp_name = code) %>%
-      unique() %>%
       rowwise() %>%
-      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])) %>%
-      select(DataSet, decimalLatitude_NAD83, decimalLongitude_NAD83, source_sp_name, ObsDate, ObsYear, searched_term) 
+      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
+      select(DataSet, decimalLatitude_NAD83, decimalLongitude_NAD83, source_sp_name, ObsDate, ObsYear, searched_term) %>%
+      unique()
           
     # convert from NAD83 to WGS84
     n = nrow(lmf_parse)
@@ -119,7 +119,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
       filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
       unique() %>%
       rowwise() %>%
-      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])) %>%
+      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
       select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) 
 
     n = nrow(NPS_PARSE)
@@ -166,7 +166,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
       filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
       unique() %>%
       rowwise() %>%
-      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])) %>%
+      mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
       select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) 
     
     n = nrow(N_BLM_PARSE)

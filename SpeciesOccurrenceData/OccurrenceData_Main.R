@@ -104,7 +104,6 @@ AddDataFromFiles(aim_file_loc = aim_file,
                  lmf_file_loc = lmf_file,
                  nisims_nps_file_loc = nisims_nps_file,
                  nisims_blm_file_loc = nisims_blm_file)
-df_list$BLM_AIM
 
 ########################################################################################################
 #4. Perform QA/QC on occurrence records

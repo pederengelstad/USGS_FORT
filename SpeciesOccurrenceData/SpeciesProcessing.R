@@ -55,10 +55,10 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   # still, it's good to include it, in case lots of sources use this term and ITIS doesn't for whatever reason.
   if(!is.null(sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))])){
     for(i in sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))]){
-      sp_df = rbind(sp_df,c(NA,i))
+      sp_df = rbind(sp_df,c(paste0(i," sp."),i,NA))
     }
   }
-  
+
   sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
   
   # synthesize full, unique species name list including synonyms

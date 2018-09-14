@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <TileMap version="1.0.0" tilemapservice="http://tms.osgeo.org/1.0.0">
+      <Title>fountaingrass_rf_MPP_threshold_lakemead_50kbuff.tif</Title>
+      <Abstract></Abstract>
+      <SRS>EPSG:3857</SRS>
+      <BoundingBox minx="-119.82533903286918" miny="32.49140165439778" maxx="-107.58566256399722" maxy="41.31236587026219"/>
+      <Origin x="-119.82533903286918" y="32.49140165439778"/>
+      <TileFormat width="256" height="256" mime-type="image/png" extension="png"/>
+      <TileSets profile="mercator">
+        <TileSet href="8" units-per-pixel="611.49622617187504" order="8"/>
+      </TileSets>
+    </TileMap>
+    

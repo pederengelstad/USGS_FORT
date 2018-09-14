@@ -111,16 +111,16 @@ AddDataFromFiles = function(aim_file_loc = NULL
       select(SCNTFC_CD, CNTR_PT_CN, BEGIN_DT)%>%
       filter(CNTR_PT_CN != '' & SCNTFC_CD %in% code_list & BEGIN_DT >= startdate & BEGIN_DT <= enddate) %>%
       mutate(DataSet = "NISIMS_NPS"
-             ,albersLatitude = as.numeric(str_extract(CNTR_PT_CN, pattern = "(?<=X: )(-?\\d+\\.+\\d+)"))         
-             ,albersLongitude = as.numeric(str_extract(CNTR_PT_CN, pattern = "(?<=Y: )(-?\\d+\\.+\\d+)"))
+             ,albersLatitude = as.numeric(str_extract(CNTR_PT_CN, pattern = "(?<=X: ).*(?= Y)"))         
+             ,albersLongitude = as.numeric(str_extract(CNTR_PT_CN, pattern = "(?<= Y: ).*"))
              ,source_sp_name = SCNTFC_CD
              ,ObsDate = as.Date(BEGIN_DT)
              ,ObsYear = as.integer(format(as.Date(BEGIN_DT), "%Y"))) %>%
       filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
-      unique() %>%
       rowwise() %>%
       mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
-      select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) 
+      select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) %>%
+      unique()
 
     n = nrow(NPS_PARSE)
     
@@ -164,10 +164,10 @@ AddDataFromFiles = function(aim_file_loc = NULL
              ,ObsDate = as.Date(BEGIN_DT)
              ,ObsYear = as.integer(format(as.Date(BEGIN_DT), "%Y"))) %>%
       filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
-      unique() %>%
       rowwise() %>%
       mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
-      select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) 
+      select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) %>%
+      unique()
     
     n = nrow(N_BLM_PARSE)
     if(n > 0){

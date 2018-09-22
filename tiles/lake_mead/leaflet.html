@@ -3,7 +3,7 @@
           <head>
             <meta charset="utf-8">
             <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
-            <title>fountaingrass_rf_MPP_threshold_lakemead_50kbuff.tif</title>
+            <title>LakeMead_ensemble_1st.tif</title>
 
             <!-- Leaflet -->
             <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" />
@@ -57,10 +57,10 @@
 
         // Map
         var map = L.map('map', {
-            center: [36.9018837623, -113.705500798],
-            zoom: 8,
-            minZoom: 4,
-            maxZoom: 8,
+            center: [36.9024635677, -113.813115867],
+            zoom: 12,
+            minZoom: 1,
+            maxZoom: 12,
             layers: [osm]
         });
 
@@ -75,7 +75,7 @@
             return this._div;
         };
         title.update = function(props) {
-            this._div.innerHTML = "fountaingrass_rf_MPP_threshold_lakemead_50kbuff.tif";
+            this._div.innerHTML = "LakeMead_ensemble_1st.tif";
         };
         title.addTo(map);
 
@@ -97,7 +97,7 @@
         L.control.layers(basemaps, overlaymaps, {collapsed: false}).addTo(map);
 
         // Fit to overlay bounds (SW and NE points with (lat, lon))
-        map.fitBounds([[32.4914016544, -107.585662564], [41.3123658703, -119.825339033]]);
+        map.fitBounds([[31.7914553239, -106.965644198], [42.0134718115, -120.660587536]]);
 
         </script>
 

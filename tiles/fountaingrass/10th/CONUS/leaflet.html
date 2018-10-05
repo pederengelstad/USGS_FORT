@@ -3,7 +3,7 @@
           <head>
             <meta charset="utf-8">
             <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
-            <title>ensemble_1st_CONUS_color.tif</title>
+            <title>ensemble_10th_CONUS_color.tif</title>
 
             <!-- Leaflet -->
             <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" />
@@ -57,7 +57,7 @@
 
         // Map
         var map = L.map('map', {
-            center: [37.1690981253, -96.7390195771],
+            center: [37.1770975814, -96.7390168597],
             zoom: 4,
             minZoom: 4,
             maxZoom: 4,
@@ -75,7 +75,7 @@
             return this._div;
         };
         title.update = function(props) {
-            this._div.innerHTML = "ensemble_1st_CONUS_color.tif";
+            this._div.innerHTML = "ensemble_10th_CONUS_color.tif";
         };
         title.addTo(map);
 
@@ -97,7 +97,7 @@
         L.control.layers(basemaps, overlaymaps, {collapsed: false}).addTo(map);
 
         // Fit to overlay bounds (SW and NE points with (lat, lon))
-        map.fitBounds([[23.0701487574, -65.0927271176], [51.2680474932, -128.385312037]]);
+        map.fitBounds([[23.0861507191, -65.0917248449], [51.2680444438, -128.386308874]]);
 
         </script>
 

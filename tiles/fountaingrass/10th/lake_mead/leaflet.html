@@ -3,7 +3,7 @@
           <head>
             <meta charset="utf-8">
             <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
-            <title>ensemble_10th_LKMead_color.tif</title>
+            <title>ensemble_10th_LakeMead_color.tif</title>
 
             <!-- Leaflet -->
             <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" />
@@ -57,7 +57,7 @@
 
         // Map
         var map = L.map('map', {
-            center: [36.9024635677, -113.813115867],
+            center: [36.9312301932, -113.655700345],
             zoom: 10,
             minZoom: 0,
             maxZoom: 10,
@@ -75,7 +75,7 @@
             return this._div;
         };
         title.update = function(props) {
-            this._div.innerHTML = "ensemble_10th_LKMead_color.tif";
+            this._div.innerHTML = "ensemble_10th_LakeMead_color.tif";
         };
         title.addTo(map);
 
@@ -97,7 +97,7 @@
         L.control.layers(basemaps, overlaymaps, {collapsed: false}).addTo(map);
 
         // Fit to overlay bounds (SW and NE points with (lat, lon))
-        map.fitBounds([[31.7914553239, -106.965644198], [42.0134718115, -120.660587536]]);
+        map.fitBounds([[32.9284826176, -108.070730262], [40.9339777687, -119.240670428]]);
 
         </script>
 

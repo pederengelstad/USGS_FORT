@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
     <TileMap version="1.0.0" tilemapservice="http://tms.osgeo.org/1.0.0">
-      <Title>target_ensemble_1st_color.tif</Title>
+      <Title>KDE_ensemble_1st_color.tif</Title>
       <Abstract></Abstract>
       <SRS>EPSG:3857</SRS>
       <BoundingBox minx="-128.38630887449671" miny="23.08615071910018" maxx="-65.09172484494258" maxy="51.26804444375193"/>

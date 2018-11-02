@@ -29,7 +29,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     if(is.null(gbifopts)==T){
       gbifopts <- list(country='US')
     } else{
-      gbifopts <- c(gbif_options, country='US')
+      gbifopts <- c(gbifopts, country='US')
     }
     
     if(is.null(bisonopts)==T){

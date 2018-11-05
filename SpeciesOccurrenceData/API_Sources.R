@@ -66,7 +66,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
           filter(!(habitat %in% 'cultivated'))
       }
 
-      gbif_df %>%
+      gbif_df <- gbif_df %>%
         filter(basisOfRecord %in% c("PRESERVED_SPECIMEN", "HUMAN_OBSERVATION", "OBSERVATION")) %>%
         select(prov, name, longitude, latitude, eventDate, year, scientificName) %>%
         mutate(DataSet = prov,

@@ -21,11 +21,12 @@ new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"
 if(length(new.packages)) install.packages(new.packages)
 
 # !!! if you don't already have the latest version of spocc and/or taxize from github, uncomment the line below and run !!!
-# devtools::install_github("ropensci/spocc")
+
+# devtools::install_github("ropensci/spocc", force = T)
 # devtools::install_github("ropensci/taxize")
 
 library(tidyverse)
-setwd('~/GitHub/USGS_FORT/SpeciesOccurrenceData/')
+setwd('E:/Users/engelstad/GitHub/USGS_FORT/SpeciesOccurrenceData/')
 
 # !!! make sure you have the latest version of the source scripts to run the following lines
 # download.file(url="https://github.com/pederengelstad/USGS_FORT/archive/master.zip",destfile = 'OccScripts.zip', method = "curl")
@@ -44,12 +45,13 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
-# sp_list = suppressWarnings(readLines('C:/Users/peder/Documents/USGS/Scripts/ShinyApps/FWS_Viz/fws_specieslist.txt'))
-sp_list = c('Ceratocephala testiculata','Chondrilla juncea', 'Cardaria draba', 'Ventenata dubia', 'Centaurea solstitialis')
-
+# sp_list = suppressWarnings(readLines('E:/Users/engelstad/USGS/OccurrenceData/PopulusSalix/splist.txt'))
+sp_list = c('Populus', 'Salix')
 species_processing(sort(sp_list), USDA=T)
-sp_df
-sort(species_search_list)
+sp_df = sp_df[sp_df$ITISacceptedName != 'Croton pseudopopulus',]
+
+species_search_list = sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
+species_search_list
 
 ################################################################################
 #3. Pull data from API Sources
@@ -60,8 +62,6 @@ startdate <- '1980-01-01'
 enddate <- as.Date(Sys.Date())
 
 # Query data available from API and loads into df_list the resulting data frame.
-
-
 # 3.1  api_data Function notes:
 #      sources - choose from 'gbif','bison','eddmaps','inat', and/or 'ecoengine'
 #      limit - is the number of results PER SPECIES and is not currently passed to EDDMapS
@@ -79,11 +79,11 @@ api_data(species_list = species_search_list
          , bisonopts = bison_options
          , startDate = startdate
          , endDate = enddate
-         , US_only = F
+         , US_only = T
 )
 
 # df_list$spocc %>%
-#   filter(DataSet=='gbif') %>%
+#   filter(DataSet=='bison') %>%
 #   select(searched_term) %>%
 #   group_by(searched_term) %>%
 #   summarize(count = n())
@@ -95,10 +95,10 @@ api_data(species_list = species_search_list
 
 source('./DataFromFiles.R')
 
-aim_file = '~/USGS/Data/BLM/AIM.allsp.pnts.May2018.csv'
-lmf_file = '~/USGS/Data/BLM/LMF.allsp.csv'
-nisims_nps_file = '~/USGS/Data/NISIMS/NISIMS_NPS_L48.csv'
-nisims_blm_file = '~/USGS/Data/NISIMS/NISIMS_BLM_L48.csv'
+aim_file = 'E:/Users/engelstad/USGS/data/BLM/AIM.allsp.pnts.May2018.csv'
+lmf_file = 'E:/Users/engelstad/USGS/data/BLM/LMF.allsp.csv'
+nisims_nps_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_NPS_L48.csv'
+nisims_blm_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_BLM_L48.csv'
 
 AddDataFromFiles(aim_file_loc = aim_file,
                  lmf_file_loc = lmf_file,
@@ -124,14 +124,14 @@ occ_all %>%
   summarize(count = n())
 
 
-write.csv(occ_all, '~/SpOcc_Request_20180827.csv')
+write.csv(occ_all, 'E:/Users/engelstad/USGS/OccurrenceData/PopulusSalix/SpOcc_Request_20180827.csv')
 
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes
 library(leaflet)
 library(viridis)
 library(htmltools)
-csv = read.csv("~/SpOcc_Request_20180827.csv", header=T, stringsAsFactors = F)
+csv = read.csv('E:/Users/engelstad/USGS/OccurrenceData/PopulusSalix/SpOcc_Request_20180827.csv', header=T, stringsAsFactors = F)
 n = length(unique(occ_all$ITIS_AcceptedName))
 pal = colorFactor(rainbow(n), occ_all$ITIS_AcceptedName)
 

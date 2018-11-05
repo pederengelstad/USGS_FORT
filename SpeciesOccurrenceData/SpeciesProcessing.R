@@ -21,6 +21,12 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   # drop names that aren't in the original search list or are 'accepted'. this speeds up synonym search time.
   t = t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted'),]
   
+  # drop hybrids
+  t = t[!t$scientificName %in% grep("X", t$scientificName, value = T, ignore.case = F),]
+
+  # drop one word terms...too general
+  t = t[str_count(t$scientificName, pattern = '\\w+') > 1,]
+
   # not currently using this line because ITIS sometimes won't find synonyms without very specific TSNs
   # base names will match the original searched term, thankfully
   # t = t0[str_count(t0$scientificName, '\\s') <= 2,]
@@ -34,7 +40,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   
   # add accepted terms to synonym data frame
   s = s0 %>%
-    left_join(t, by=c('acc_tsn'='tsn'))
+    right_join(t, by=c('acc_tsn'='tsn'))
   
   # unify accepted names
   s$ITISacceptedName = ifelse(is.na(s$scientificName),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))
@@ -46,18 +52,20 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     s$synonym_base = NA
   }
   
-  # simplify data frame and deduplicate
+  # simplify data frame, deduplicate, and double check that there aren't hybrids in the synonyms
   sp_df = s %>%
     select(ITISacceptedName, synonym_base) %>%
     unique()
+  sp_df = sp_df[!sp_df$synonym_base %in% grep("X", sp_df$synonym_base, value = T, ignore.case = F),]
+
   
   # sometimes, the only matches are for outdated unaccepted terms or the species name may be misspelled.
   # still, it's good to include it, in case lots of sources use this term and ITIS doesn't for whatever reason.
-  if(!is.null(sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))])){
-    for(i in sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))]){
-      sp_df = rbind(sp_df,c(paste0(i," sp."),i,NA))
-    }
-  }
+  # if(!is.null(sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))])){
+  #   for(i in sp_list[!sp_list %in% c(unique(na.omit(s$ITISacceptedName)),unique(na.omit(s$synonym_base)))]){
+  #     sp_df = rbind(sp_df,c(paste0(i," sp."),i,NA))
+  #   }
+  # }
 
   sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
   

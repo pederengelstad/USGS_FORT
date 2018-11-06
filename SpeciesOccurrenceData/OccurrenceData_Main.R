@@ -82,11 +82,11 @@ api_data(species_list = species_search_list
          , US_only = T
 )
 
-# df_list$spocc %>%
-#   filter(DataSet=='bison') %>%
-#   select(searched_term) %>%
-#   group_by(searched_term) %>%
-#   summarize(count = n())
+df_list$eddmaps %>%
+  # filter(DataSet=='') %>%
+  select(searched_term) %>%
+  group_by(searched_term) %>%
+  summarize(count = n())
 
 ########################################################################################################
 # Add data from .csv or .txt files; choose from 'blm_aim', 'blm_lmf', 'nisims' or a vector of 2+
@@ -139,10 +139,12 @@ pal = colorFactor(rainbow(n), occ_all$ITIS_AcceptedName)
 spatial_occ <- SpatialPointsDataFrame(data = occ_all, coords = occ_all[c('latitude','longitude')],proj4string = CRS("+init=epsg:4326"))
 
 m <- leaflet(data=spatial_occ) %>%
-  addTiles("https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png") %>%  # Add defau
+  addTiles() %>%  # Add default tiles
   addCircleMarkers(lng=~longitude, lat=~latitude
                    , fillColor = ~pal(ITIS_AcceptedName)
                    , stroke=F, fillOpacity=0.8, radius = 2.8, popup = ~htmlEscape(ObsDate)) %>%
   addLegend("topright", pal = pal, values = ~ITIS_AcceptedName, labels = "Species ", title = "Invasive Species")
 m  # Print the map
 ################################################################################
+
+                       

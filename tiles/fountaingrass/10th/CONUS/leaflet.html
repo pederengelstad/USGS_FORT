@@ -3,7 +3,7 @@
           <head>
             <meta charset="utf-8">
             <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
-            <title>ensemble_10th_CONUS_color.tif</title>
+            <title>ensemble_10th_color.tif</title>
 
             <!-- Leaflet -->
             <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.5/leaflet.css" />
@@ -58,9 +58,9 @@
         // Map
         var map = L.map('map', {
             center: [37.1770975814, -96.7390168597],
-            zoom: 4,
-            minZoom: 4,
-            maxZoom: 4,
+            zoom: 10,
+            minZoom: 0,
+            maxZoom: 10,
             layers: [osm]
         });
 
@@ -75,7 +75,7 @@
             return this._div;
         };
         title.update = function(props) {
-            this._div.innerHTML = "ensemble_10th_CONUS_color.tif";
+            this._div.innerHTML = "ensemble_10th_color.tif";
         };
         title.addTo(map);
 

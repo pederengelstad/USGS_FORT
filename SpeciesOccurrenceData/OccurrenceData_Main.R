@@ -54,10 +54,6 @@ species_search_list
 #3. Pull data from API Sources
 source('./API_Sources.R')
 
-api_sources <- c('gbif','bison','eddmaps')
-startdate <- '1980-01-01'
-enddate <- as.Date(Sys.Date())
-
 # Query data available from API and loads into df_list the resulting data frame.
 # 3.1  api_data Function notes:
 #      sources - choose from 'gbif','bison','eddmaps','inat', and/or 'ecoengine'
@@ -68,19 +64,21 @@ enddate <- as.Date(Sys.Date())
 # 3.3  visit ... for information on the full range of bison and gbif options
 
 df_list <- list()
-bison_options = list(params=c('basisOfRecord: specimen, observation'))
+api_sources <- c('gbif','bison','eddmaps')
+startdate <- '1980-01-01'
+enddate <- as.Date(Sys.Date())
 
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 99999
-         , bisonopts = bison_options
+         , limit = 100
          , startDate = startdate
          , endDate = enddate
          , US_only = T
 )
 
-df_list$eddmaps %>%
-  # filter(DataSet=='') %>%
+# As needed, review these occ records to see if the number of records is reasonable.
+df_list$spocc %>%
+  filter(DataSet=='bison') %>%
   select(searched_term) %>%
   group_by(searched_term) %>%
   summarize(count = n())

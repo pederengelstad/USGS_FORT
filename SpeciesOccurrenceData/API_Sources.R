@@ -17,7 +17,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
   #       What are the actual limits for GBIF and BISON record searches?
   #       Note 1: depending on the number of species and databases queried, the occ() function may result in very long run-times (> 15 min), esp w/ ecoengine
   
-  v <- c("gbif","bison", "inat","ecoengine")
+  v <- c("gbif","bison","inat","ecoengine")
   
   #restrict records to US or leave search open to global records
   if(US_only==T){
@@ -60,8 +60,9 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
           filter(!(habitat %in% 'cultivated'))
       }
 
-      gbif_df <- gbif_df %>%
+      gbif_df <- as.data.frame(occ2df(spocc_df$gbif)) %>%
         filter(basisOfRecord %in% c("PRESERVED_SPECIMEN", "HUMAN_OBSERVATION", "OBSERVATION")) %>%
+        filter(is.na(coordinateUncertaintyInMeters) | coordinateUncertaintyInMeters <= 30) %>%
         select(prov, name, longitude, latitude, eventDate, year, scientificName) %>%
         mutate(DataSet = prov,
                decimalLatitude = as.numeric(latitude),
@@ -78,15 +79,16 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     
     if(sum(sapply(spocc_df$bison$data, NROW)) > 0){
       bison_df <- as.data.frame(occ2df(spocc_df$bison)) %>%
-        filter(!is.na(date) & str_count(string = pointPath, pattern = 'centroid') != 1) %>%
-        mutate(DataSet = prov,
-               decimalLatitude = as.numeric(latitude),
-               decimalLongitude = as.numeric(longitude),
-               ObsDate = as.Date(date),
-               ObsYear = as.integer(format(as.Date(date), "%Y")),
-               source_sp_name = providedScientificName,
-               searched_term = word(name,1,2," ")
-        )
+          filter(!is.na(date) & str_count(string = pointPath, pattern = 'centroid') != 1) %>%
+          filter(is.na(centroid) & basisOfRecord %in% c('observation','specimen')) %>%
+          mutate(DataSet = prov,
+                 decimalLatitude = as.numeric(latitude),
+                 decimalLongitude = as.numeric(longitude),
+                 ObsDate = as.Date(date),
+                 ObsYear = as.integer(format(as.Date(date), "%Y")),
+                 source_sp_name = providedScientificName,
+                 searched_term = word(name,1,2," ")
+    )
       bison_final <- bison_df %>%
         select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
         unique()

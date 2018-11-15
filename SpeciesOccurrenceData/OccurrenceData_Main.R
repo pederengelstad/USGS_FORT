@@ -45,7 +45,7 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
-# sp_list = suppressWarnings(readLines('E:/Users/engelstad/USGS/OccurrenceData/PopulusSalix/splist.txt'))
+# sp_list = suppressWarnings(readLines(''))
 sp_list = c('Bromus tectorum')
 species_processing(sort(sp_list), USDA=T)
 species_search_list

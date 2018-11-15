@@ -70,7 +70,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
   
   # synthesize full, unique species name list including synonyms
-  species_search_list <<- unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base)))
+  species_search_list <<- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
   
   # to search the USDA plants database for codes, two queries are generated:
   # 1. searching for the currently used code

@@ -5,27 +5,26 @@
 # Affiliation: Colorado State University
 # Contact: pengel@colostate.edu
 # Origin Date: 3/7/2018
-# Last Edited: 7/24/2018
+# Last Edited: 11/15/2018
 # Purpose: Download and combine species occurrence data, perform QA/QC, and export to CSV
-# Script Purpose: 1. Determine all species considered invasive from USDA. 
-#                 2. Pull occurrence records from API and hard-coded data sources.
-#                 3. Generate background point data based on lat-longs from occurrence records
+# Script Purpose: Pull occurrence records from API and hard-coded data sources
 #
-# Authors: Peder Engelstad (adapted from work by Helen Sofaer)
+# Authors: Peder Engelstad, adapted from work by Helen Sofaer. 
+#          Also, a huge thank you to Scott Chamberlin at rOpenSci for developing packages
+#          like 'spocc' and for being so responsive/helpful!
+#
 # Contact: pengel@colostate.edu
 
 
-
+################################
 list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","scrubr",'spocc',"stringr","taxize","tidyverse")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
 # !!! if you don't already have the latest version of spocc and/or taxize from github, uncomment the line below and run !!!
+# remotes::install_github("ropensci/spocc")
+# remotes::install_github("ropensci/taxize")
 
-# devtools::install_github("ropensci/spocc", force = T)
-# devtools::install_github("ropensci/taxize")
-
-library(tidyverse)
 setwd('E:/Users/engelstad/GitHub/USGS_FORT/SpeciesOccurrenceData/')
 
 # !!! make sure you have the latest version of the source scripts to run the following lines
@@ -34,23 +33,21 @@ setwd('E:/Users/engelstad/GitHub/USGS_FORT/SpeciesOccurrenceData/')
 
 ################################################################################
 #2. Check for synonyms from ITIS and develop a finalized species list
-
+library(tidyverse)
 source('./SpeciesProcessing.R')
 
 # Notes:
 # 2.1 This function produces two objects: sp_df and species_search_list. The latter
 #     is a vector of all accepted species names and their synonyms. This list extracts 
-#     the genus and species ONLY!
+#     the genus and species only--no subspecies, variants, or hybrids as they may not 
+#     be ecologically representative of the species queried.
 #
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines('E:/Users/engelstad/USGS/OccurrenceData/PopulusSalix/splist.txt'))
-sp_list = c('Populus', 'Salix')
+sp_list = c('Bromus tectorum')
 species_processing(sort(sp_list), USDA=T)
-sp_df = sp_df[sp_df$ITISacceptedName != 'Croton pseudopopulus',]
-
-species_search_list = sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
 species_search_list
 
 ################################################################################

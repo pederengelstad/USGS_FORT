@@ -6,8 +6,6 @@ library(gsheet)
 library(httr)
 
 #TO DO: 1. produce dataframe describing the total number of available records, by species and data source
-#       2. include country field
-
 
 api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoengine','eddmaps')
                      , limit=5, startDate=NULL, endDate=NULL, bisonopts=NULL, gbifopts=NULL, inatopts=NULL
@@ -17,8 +15,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
   
   # 2.1 - Query sources for species data over their global extent (can be restricted to U.S. with additional parameter)
   #       What are the actual limits for GBIF and BISON record searches?
-  #       Note 1: Search type for spocc is exact (???) 
-  #       Note 2: depending on the number of species and databases queried, the occ() function may result in very long run-times (> 15 min), esp w/ ecoengine
+  #       Note 1: depending on the number of species and databases queried, the occ() function may result in very long run-times (> 15 min), esp w/ ecoengine
   
   v <- c("gbif","bison", "inat","ecoengine")
   
@@ -33,12 +30,9 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     }
     
     if(is.null(bisonopts)==T){
-      bisonopts <- list(params=c('countryCode: US')) #if no set options, generate variable
-    }
-    if(is.null(bisonopts$params)==T){
-      bisonopts <- c(bisonopts, params=c('countryCode: US')) #if params not included options, generate variable
+      bisonopts <- list(countryCode='US') #if no set options, generate variable
     } else{
-      bisonopts$params <- paste0(bisonopts$params,'; countryCode: US') # if params are included, append countryCode search option
+      bisonopts[['countryCode']] = 'US' # if params are included, append countryCode search option
     }
   } else{
     edd_loc = ""

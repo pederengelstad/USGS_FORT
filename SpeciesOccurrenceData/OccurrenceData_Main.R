@@ -70,7 +70,7 @@ enddate <- as.Date(Sys.Date())
 
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 100
+         , limit = 1000
          , startDate = startdate
          , endDate = enddate
          , US_only = T

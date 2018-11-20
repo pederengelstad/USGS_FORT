@@ -147,8 +147,8 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     # hitting their API for each species subject ID
     g <- suppressWarnings(gsheet2tbl('https://docs.google.com/spreadsheets/d/1OnADbTEmHO4HbQd1mmPchJXz502ONOCjLDTNHxKkdwo'))
     
-    edd_date_start = format(as.Date(startdate), "%m/%d/%Y")
-    edd_date_end = format(as.Date(enddate), "%m/%d/%Y")
+    edd_date_start = format(as.Date(startDate), "%m/%d/%Y")
+    edd_date_end = format(as.Date(endDate), "%m/%d/%Y")
     
     g2 <- g %>%
       select(Scientificname, RowsID) %>%

@@ -79,55 +79,35 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     
     print("Finding USDA species codes")
     
-    for (i in 1:nrow(sp_df)){
-      if(!is.na(sp_df[i,1])){
-        tmp_genus = ifelse(is.na(word(sp_df[i,1],1,1)), '', word(sp_df[i,1],1,1))
-        tmp_sp = ifelse(is.na(word(sp_df[i,1],2,2)), '', word(sp_df[i,1],2,2))
-    j <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', tmp_genus,"&Species=",tmp_sp)), error=function(e) NULL)
-      } else{
-        j <- NULL
-      }
+    plants.db = as.data.frame(gsheet::gsheet2tbl("https://docs.google.com/spreadsheets/d/1OCer0LGtsVjAcjNrIa6aQQ_7YzHycemO1rwI-aJePr4/edit?usp=sharing"))
 
-      if(!is.na(sp_df[i,2])){
-        tmp_genus = ifelse(is.na(word(sp_df[i,2],1,1)), '', word(sp_df[i,2],1,1))
-        tmp_sp = ifelse(is.na(word(sp_df[i,2],2,2)), '', word(sp_df[i,2],2,2))
-        k <- tryCatch(fromJSON(paste0('https://plantsdb.xyz/search/?Genus=', tmp_genus,"&Species=",tmp_sp)), error=function(e) NULL)
-      } else {
-        k <- NULL
-      }
+    #First check for matches with ITIS accepted names
+    acc.symbol.df = plants.db[plants.db$Scientific_Name %in% sp_df$ITISacceptedName,]
+    syn.symbol.df = plants.db[plants.db$Scientific_Name %in% sp_df$synonym_base[!is.na(sp_df$synonym_base)],]
 
-      if(is.null(j) & is.null(k)){
-        sp_df$usda_codes[i] <- NA
-        next}
+    #Then check through the synonyms (there should be less of these, generally)
+    for(i in 1:nrow(sp_df)){
       
-      if(!is.null(j)){
-        a <- na.omit(unique(j$data$Accepted_Symbol_x))
-        b <- str_split(na.omit(unique(subset(j$data$Synonym_Symbol_x, j$data$Synonym_Symbol_x != ""))), ', ')
-        
-      } else{
-        a <- NA
-        b <- NA
-      }
-
-      if(!is.null(k)){
-        c <- na.omit(unique(k$data$Accepted_Symbol_x))
-        d <- str_split(na.omit(unique(subset(k$data$Synonym_Symbol_x, k$data$Synonym_Symbol_x != ""))), ',')
-      } else {
-        c <- NA
-        d <- NA
+      if(!is.na(sp_df[i, 1])){
+        acc.df <- plants.db[plants.db$Scientific_Name == sp_df[i, 1],]
+        acc.df.full <- plants.db[plants.db$Accepted_Symbol == acc.df[[1]],]
+        symbols.flat <- unique(c(acc.df.full[,1], acc.df.full[,2], acc.df.full[,3]))
+        symbols.vec <- symbols.flat[!is.na(symbols.flat)]
       }
       
-      vec <- unique(as.character(na.omit(c(as.character(a),as.character(b),as.character(c),as.character(d)))))
-      sp_df$usda_codes[i] <- str_flatten(vec, collapse = ", ")
+      if(!is.na(sp_df[i, 2])){
+        syn.symbol <- syn.symbol.df[syn.symbol.df$Scientific_Name == sp_df[i,2],][[3]]
+        symbols.vec <- unique(c(symbols.vec,syn.symbol))
+      }
+      
+      symbols.vec <- str_flatten(symbols.vec, collapse = ',')
+      sp_df$usda_codes[i] <<- symbols.vec
     }
-  }
-  
-  sp_df <- sp_df[with(sp_df, order(ITISacceptedName,synonym_base)),]
-  
-  #make sure that the data frame does not contain rows with only NAs
-  sp_df <<- sp_df[rowSums(is.na(sp_df)) != ncol(sp_df),]
+
+    rm(plants.db)
   
   print("Species Processing Complete!")
   
   }
 
+}

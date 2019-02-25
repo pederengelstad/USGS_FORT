@@ -1,5 +1,5 @@
 # USGS_FORT
 
-### Contents
+## Contents
 
 1. Species Occurrence Data Scripts

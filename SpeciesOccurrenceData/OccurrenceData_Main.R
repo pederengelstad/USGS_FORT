@@ -33,7 +33,7 @@ setwd('E:/Users/engelstad/GitHub/USGS_FORT/SpeciesOccurrenceData/')
 
 ################################################################################
 #2. Check for synonyms from ITIS and develop a finalized species list
-library(tidyverse)
+library(tidyverse, verbose = F)
 source('./SpeciesProcessing.R')
 
 # Notes:
@@ -46,8 +46,9 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines(''))
-sp_list = c('Bromus tectorum')
-species_processing(sort(sp_list), USDA=T)
+sp_list = c('Microstegium vimineum')
+species_processing(sort(sp_list),USDA = T)
+sp_df
 species_search_list
 
 ################################################################################
@@ -65,15 +66,15 @@ source('./API_Sources.R')
 
 df_list <- list()
 api_sources <- c('gbif','bison','eddmaps')
-startdate <- '1980-01-01'
+startdate <- '1600-01-01'
 enddate <- as.Date(Sys.Date())
 
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 1000
+         , limit = 99999
          , startDate = startdate
          , endDate = enddate
-         , US_only = T
+         , US_only = F
 )
 
 # As needed, review these occ records to see if the number of records is reasonable.
@@ -112,21 +113,19 @@ source('./DataCleaning.R')
 
 Data_QAQC(df_list)
 
-
 occ_all %>%
   select(DataSet) %>%
   group_by(DataSet) %>%
   summarize(count = n())
 
-
-write.csv(occ_all, 'E:/Users/engelstad/USGS/OccurrenceData/PopulusSalix/SpOcc_Request_20180827.csv')
+write.csv(occ_all, 'E:/Users/engelstad/USGS/OccurrenceData/Stiltgrass_IanPearse/stiltgrass_qaqc.csv')
 
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes
 library(leaflet)
 library(viridis)
 library(htmltools)
-csv = read.csv('E:/Users/engelstad/USGS/OccurrenceData/PopulusSalix/SpOcc_Request_20180827.csv', header=T, stringsAsFactors = F)
+csv = read.csv('E:/Users/engelstad/USGS/OccurrenceData/Stiltgrass_IanPearse/stiltgrass_qaqc.csv', header=T, stringsAsFactors = F)
 n = length(unique(occ_all$ITIS_AcceptedName))
 pal = colorFactor(rainbow(n), occ_all$ITIS_AcceptedName)
 

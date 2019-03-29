@@ -9,10 +9,10 @@
 
 species_processing <- function(sp_list=NULL, USDA=TRUE){
   
-  library(ritis)
-  library(taxize)
-  library(tidyverse)
-  library(jsonlite)
+  library(ritis, verbose = F, quietly = T, warn.conflicts = F)
+  library(taxize, verbose = F, quietly = T, warn.conflicts = F)
+  library(tidyverse, verbose = F, quietly = T, warn.conflicts = F)
+  library(gsheet, verbose = F, quietly = T, warn.conflicts = F)
   
   # get required TSNs to efficiently process species names using ITIS
   t0 = unique(bind_rows(get_tsn_(searchterm = sort(sp_list),accepted = F, messages = T)))

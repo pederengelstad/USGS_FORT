@@ -25,7 +25,7 @@ if(length(new.packages)) install.packages(new.packages)
 # remotes::install_github("ropensci/spocc")
 # remotes::install_github("ropensci/taxize")
 
-setwd('E:/Users/engelstad/GitHub/USGS_FORT/SpeciesOccurrenceData/')
+setwd('E:/Users/engelstad/GitHub/USGS_FORT_2/SpeciesOccurrenceData/')
 
 # !!! make sure you have the latest version of the source scripts to run the following lines
 # download.file(url="https://github.com/pederengelstad/USGS_FORT/archive/master.zip",destfile = 'OccScripts.zip', method = "curl")
@@ -46,14 +46,15 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines(''))
-sp_list = c('Microstegium vimineum')
+sp_list = c('Aegopodium podagraria')
 species_processing(sort(sp_list),USDA = T)
 sp_df
 species_search_list
 
 ################################################################################
 #3. Pull data from API Sources
-source('./API_Sources.R')
+# source('./API_Sources.R')
+source('./API_Sources_NoInat.R')
 
 # Query data available from API and loads into df_list the resulting data frame.
 # 3.1  api_data Function notes:
@@ -65,13 +66,13 @@ source('./API_Sources.R')
 # 3.3  visit ... for information on the full range of bison and gbif options
 
 df_list <- list()
-api_sources <- c('gbif','bison','eddmaps')
-startdate <- '1600-01-01'
+api_sources <- c('bison', 'gbif', 'eddmaps')
+startdate <- '1980-01-01'
 enddate <- as.Date(Sys.Date())
 
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 99999
+         , limit = 999999
          , startDate = startdate
          , endDate = enddate
          , US_only = F
@@ -79,7 +80,7 @@ api_data(species_list = species_search_list
 
 # As needed, review these occ records to see if the number of records is reasonable.
 df_list$spocc %>%
-  filter(DataSet=='bison') %>%
+  # filter(DataSet=='bison') %>%
   select(searched_term) %>%
   group_by(searched_term) %>%
   summarize(count = n())
@@ -118,16 +119,16 @@ occ_all %>%
   group_by(DataSet) %>%
   summarize(count = n())
 
-write.csv(occ_all, 'E:/Users/engelstad/USGS/OccurrenceData/Stiltgrass_IanPearse/stiltgrass_qaqc.csv')
+write.csv(occ_all, 'E:/Users/engelstad/USGS/OccurrenceData/bishopsGoutweed_testing/test.csv')
 
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes
 library(leaflet)
 library(viridis)
 library(htmltools)
-csv = read.csv('E:/Users/engelstad/USGS/OccurrenceData/Stiltgrass_IanPearse/stiltgrass_qaqc.csv', header=T, stringsAsFactors = F)
-n = length(unique(occ_all$ITIS_AcceptedName))
-pal = colorFactor(rainbow(n), occ_all$ITIS_AcceptedName)
+csv = read.csv('E:/Users/engelstad/USGS/OccurrenceData/bishopsGoutweed_testing/test.csv', header=T, stringsAsFactors = F)
+n = length(unique(occ_all$DataSet))
+pal = colorFactor(rainbow(n), occ_all$DataSet)
 
 # csv = csv[csv$ITIS_AcceptedName=='Oplismenus undulatifolius',]
 spatial_occ <- SpatialPointsDataFrame(data = occ_all, coords = occ_all[c('latitude','longitude')],proj4string = CRS("+init=epsg:4326"))
@@ -135,9 +136,9 @@ spatial_occ <- SpatialPointsDataFrame(data = occ_all, coords = occ_all[c('latitu
 m <- leaflet(data=spatial_occ) %>%
   addTiles() %>%  # Add default tiles
   addCircleMarkers(lng=~longitude, lat=~latitude
-                   , fillColor = ~pal(ITIS_AcceptedName)
+                   , fillColor = ~pal(DataSet)
                    , stroke=F, fillOpacity=0.8, radius = 2.8, popup = ~htmlEscape(ObsDate)) %>%
-  addLegend("topright", pal = pal, values = ~ITIS_AcceptedName, labels = "Species ", title = "Invasive Species")
+  addLegend("topright", pal = pal, values = ~DataSet, labels = "Species ", title = "Data Source")
 m  # Print the map
 ################################################################################
 

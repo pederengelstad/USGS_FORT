@@ -21,8 +21,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
   }
   
   #before anything gets processed, all these parsing lines NEED this
-  code_list <- unique(unlist(str_extract_all(str_flatten(sp_df$usda_codes, collapse = ', '), boundary('word'))))
-  
+  code_list <- sort(unique(unlist(str_extract_all(str_flatten( c(na.omit(sp_df$usda_codes)), collapse = ', '), boundary('word')))))
   
   #parse AIM Data
   if(!is.null(aim_file_loc)){

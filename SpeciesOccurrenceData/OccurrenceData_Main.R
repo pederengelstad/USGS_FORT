@@ -46,7 +46,7 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines(''))
-sp_list = c('Aegopodium podagraria')
+sp_list = c('Cenchrus setaceus')
 species_processing(sort(sp_list),USDA = T)
 sp_df
 species_search_list
@@ -67,7 +67,7 @@ source('./API_Sources_NoInat.R')
 
 df_list <- list()
 api_sources <- c('bison', 'gbif', 'eddmaps')
-startdate <- '1980-01-01'
+startdate <- '2018-08-01'
 enddate <- as.Date(Sys.Date())
 
 api_data(species_list = species_search_list
@@ -92,10 +92,10 @@ df_list$spocc %>%
 
 source('./DataFromFiles.R')
 
-aim_file = 'E:/Users/engelstad/USGS/data/BLM/AIM.allsp.pnts.May2018.csv'
-lmf_file = 'E:/Users/engelstad/USGS/data/BLM/LMF.allsp.csv'
-nisims_nps_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_NPS_L48.csv'
-nisims_blm_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_BLM_L48.csv'
+aim_file = 'AIM.allsp.pnts.May2018.csv'
+lmf_file = 'LMF.allsp.csv'
+nisims_nps_file = 'NISIMS_NPS_L48.csv'
+nisims_blm_file = 'NISIMS_BLM_L48.csv'
 
 AddDataFromFiles(aim_file_loc = aim_file,
                  lmf_file_loc = lmf_file,

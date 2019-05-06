@@ -40,7 +40,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   
   # add accepted terms to synonym data frame
   s = s0 %>%
-    right_join(t, by=c('acc_tsn'='tsn'))
+    left_join(t, by=c('acc_tsn'='tsn'))
   
   # unify accepted names
   s$ITISacceptedName = ifelse(is.na(s$scientificName),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))
@@ -67,7 +67,8 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   #   }
   # }
 
-  sp_df <<- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
+  sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
+  sp_df <<- sp_df[order(sp_df$ITISacceptedName),]
   
   # synthesize full, unique species name list including synonyms
   species_search_list <<- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
@@ -101,7 +102,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
       }
       
       symbols.vec <- str_flatten(symbols.vec, collapse = ',')
-      sp_df$usda_codes[i] <<- symbols.vec
+      sp_df$usda_codes[i] <<- ifelse(length(symbols.vec) == 0, NA, symbols.vec)
     }
 
     rm(plants.db)

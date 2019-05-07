@@ -27,7 +27,15 @@ species_list = sort(unique(db.sort$Scientific.Name)) # count 6,668
 
 source('./SpeciesProcessing.R')
 
-species_processing(sp_list = species_list[1:200], USDA = T)
+aa = Sys.time()
+species_processing(sp_list = species_list, USDA = T)   # total run time: 
+bb = Sys.time()
+bb-aa
+
+# there is probably a way to speed the species processing part up but I don't have time for it.
+# ncores = parallel::detectCores()-1
+# ceiling(length(species_list)/ncores)
+# parallel::parApply()
 
 #Check sp_df against original db list because sometimes natives get thrown back in from synonym hunting
 
@@ -41,22 +49,13 @@ species_search = sort(unique(c(sp_df.filter$ITISacceptedName,sp_df.filter$synony
 
 source('./API_Sources_NoInat.R')
 
-# Query data available from API and loads into df_list the resulting data frame.
-# 3.1  api_data Function notes:
-#      sources - choose from 'gbif','bison','eddmaps','inat', and/or 'ecoengine'
-#      limit - is the number of results PER SPECIES and is not currently passed to EDDMapS
-#              which pulls ALL available records with geospatial information
-#
-# 3.2  df_list must be created outside the function to avoid re-running data sources that fail
-# 3.3  visit ... for information on the full range of bison and gbif options
-
 df_list <- list()
 api_sources <- c('bison', 'gbif', 'eddmaps')
 startdate <- '1980-01-01'
 enddate <- as.Date(Sys.Date())
 
 aa = Sys.time()
-api_data(species_list = species_search[21:50]
+api_data(species_list = species_search
          , sources = api_sources
          , limit = 999999
          , startDate = startdate

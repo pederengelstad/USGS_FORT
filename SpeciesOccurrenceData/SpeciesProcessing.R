@@ -71,31 +71,15 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     
     plants.db = as.data.frame(gsheet::gsheet2tbl("https://docs.google.com/spreadsheets/d/1WkSt3EcOUkiRPRWeEZTKuQvkjhYFQre_Ox-I3FpPHbA/edit?usp=sharing"))
 
-    #First check for matches with ITIS accepted names
-    acc.symbol.df = plants.db[plants.db$Scientific_Name %in% sp_df$ITISacceptedName,]
-    syn.symbol.df = plants.db[plants.db$Scientific_Name %in% sp_df$synonym_base[!is.na(sp_df$synonym_base)],]
+    sp_df <<- sp_df %>%
+      left_join(plants.db, by = c('ITISacceptedName' = 'Scientific_Name')) %>%
+      left_join(plants.db, by = c('synonym_base' = 'Scientific_Name')) %>%
+      rowwise() %>%
+      mutate(usda_codes = ifelse(all(is.na(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),NA,
+                                 str_flatten(unique(na.omit(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),
+                                             collapse = ',')))
 
-    #Then check through the synonyms (there should be less of these, generally)
-  for(i in 1:nrow(sp_df)){
-    
-    if(!is.na(sp_df[i, 1])){
-      acc.df <- plants.db[plants.db$Scientific_Name == sp_df[i, 1],]
-      acc.df.full <- plants.db[plants.db$Accepted_Symbol == acc.df[[1]],]
-      symbols.flat <- unique(c(acc.df.full[,1], acc.df.full[,2]))
-      symbols.vec <- symbols.flat[!is.na(symbols.flat)]
-    }
-    
-    if(!is.na(sp_df[i, 2])){
-      syn.symbol <- syn.symbol.df[syn.symbol.df$Scientific_Name == sp_df[i,2],][[2]]
-      symbols.vec <- unique(c(symbols.vec,syn.symbol))
-    }
-    
-    symbols.vec <- str_flatten(symbols.vec, collapse = ',')
-    sp_df$usda_codes[i] <<- ifelse(length(symbols.vec) == 0, NA, symbols.vec)
-  }
-
-
-    rm(plants.db)
+  rm(plants.db)
   
   print("Species Processing Complete!")
   

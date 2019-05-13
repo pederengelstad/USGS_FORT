@@ -141,7 +141,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
           select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
           unique()
         
-        df_list[['nisims_nps']] <- nisims_final_NPS  
+        df_list[['nisims_nps']] <<- nisims_final_NPS  
       }
     }
   }

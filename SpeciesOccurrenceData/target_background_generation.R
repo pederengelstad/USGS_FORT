@@ -23,65 +23,31 @@ db.sort = db %>%
   select(Scientific.Name, Common.Name, Native.Status, Growth.Habit) %>%
   unique()                                                                 # count:  6,712
 
-species_list = sort(unique(db.sort$Scientific.Name)) # count 6,668
-
 source('./SpeciesProcessing.R')
 
 aa = Sys.time()
-species_processing(sp_list = species_list, USDA = T)   # total run time: 
+species_processing(sp_list = species_list, USDA = T)   # total run time: ~ 1.3 hours
 bb = Sys.time()
 bb-aa
 
-# there is probably a way to speed the species processing part up but I don't have time for it.
-# ncores = parallel::detectCores()-1
-# ceiling(length(species_list)/ncores)
-# parallel::parApply()
-
-#Check sp_df against original db list because sometimes natives get thrown back in from synonym hunting
-
-sp_df.filter = sp_df %>%
+test = sp_df %>%
   select(ITISacceptedName, synonym_base, usda_codes) %>%
   left_join(db, by=c('ITISacceptedName' = 'Scientific.Name')) %>%
-  filter(str_detect(Native.Status, 'L48\\(I\\)') | is.na(Native.Status) | Native.Status == '')
+  filter(str_detect(Native.Status, 'L48\\(I\\)'))
 
-# construct actual search list
-species_search = sort(unique(c(sp_df.filter$ITISacceptedName,sp_df.filter$synonym_base))) # Count: 
+test.2 = test %>%
+  left_join(db, by=c('synonym_base'='Scientific.Name')) %>%
+  rename(ITIS_Status = Native.Status.x, Syn_Status = Native.Status.y)
 
-source('./API_Sources_NoInat.R')
+test.3 = test.2 %>%
+  select(ITISacceptedName, synonym_base, usda_codes, ITIS_Status, Syn_Status, Common.Name.x, Growth.Habit.x) %>%
+  filter(str_detect(ITIS_Status, 'L48\\(I\\)') & (str_detect(Syn_Status, 'L48\\(I\\)') | is.na(Syn_Status) | Syn_Status == '')) %>%
+  unique()
 
-df_list <- list()
-api_sources <- c('bison', 'gbif', 'eddmaps')
-startdate <- '1980-01-01'
-enddate <- as.Date(Sys.Date())
+species_list = sort(unique(c(test.3$ITISacceptedName,test.3$synonym_base))) # count 8,644
+species_list_no_syn = sort(unique(c(test.3$ITISacceptedName)))
 
-aa = Sys.time()
-api_data(species_list = species_search
-         , sources = api_sources
-         , limit = 999999
-         , startDate = startdate
-         , endDate = enddate
-         , US_only = T
-)
-bb = Sys.time()
-bb-aa
-
-source('./DataFromFiles.R')
-
-aim_file = 'E:/Users/engelstad/USGS/data/BLM/AIM.allsp.pnts.May2018.csv'
-lmf_file = 'E:/Users/engelstad/USGS/data/BLM/LMF.allsp.csv'
-nisims_nps_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_NPS_L48.csv'
-nisims_blm_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_BLM_L48.csv'
-
-AddDataFromFiles(aim_file_loc = aim_file,
-                 lmf_file_loc = lmf_file,
-                 nisims_nps_file_loc = nisims_nps_file,
-                 nisims_blm_file_loc = nisims_blm_file)
-
-source('./DataCleaning.R')
-
-Data_QAQC(df_list)
-
-occ_all %>%
-  select(DataSet) %>%
-  group_by(DataSet) %>%
-  summarize(count = n())
+# save the sp_df dataframe and species lists
+write.csv(test.3, './sp_df_target_bg.csv')
+write.csv(species_list, './bg_sp_list.csv')
+write.csv(species_list_no_syn, './bg_sp_list_with_syn.csv')

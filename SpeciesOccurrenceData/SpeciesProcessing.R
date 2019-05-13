@@ -40,7 +40,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   
   # add accepted terms to synonym data frame
   s = s0 %>%
-    left_join(t, by=c('acc_tsn'='tsn'))
+    right_join(t, by=c('acc_tsn'='tsn'))
   
   # unify accepted names
   s$ITISacceptedName = ifelse(is.na(s$scientificName),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))

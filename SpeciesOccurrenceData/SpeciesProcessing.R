@@ -65,7 +65,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   sp_df <<- sp_df[order(sp_df$ITISacceptedName),]
 
   # synthesize full, unique species name list including synonyms
-  species_search_list <- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
+  species_search_list <<- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
 
   sp_list[!sp_list %in% species_search_list]
     

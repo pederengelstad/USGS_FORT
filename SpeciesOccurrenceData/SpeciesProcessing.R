@@ -43,24 +43,18 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     full_join(t[t$nameUsage=='accepted',], by=c('syn_tsn'='tsn')) %>%
     full_join(t[t$nameUsage!='not accepted',], by=c('acc_tsn'='tsn')) %>%
     mutate(scientificName = coalesce(scientificName.x, scientificName.y)) %>%
-    mutate(nameUsage = coalesce(nameUsage.x, nameUsage.y))
-
-  # unify accepted names
-  s$ITISacceptedName = ifelse(!is.na(s$acc_name),word(s$acc_name,1,2,' '), word(s$scientificName,1,2, ' '))
-
-  # drop extra terms from synonyms b/c it's unlikely they will be found in searches
-  if(!is.null(s$syn_name)){
-    s$synonym_base = word(s$syn_name,1,2,' ')
-  } else {  
-    s$synonym_base = NA
-  }
+    mutate(nameUsage = coalesce(nameUsage.x, nameUsage.y)) %>%
+    rowwise() %>%
+    mutate(ITISacceptedName = ifelse(nameUsage=='accepted', word(scientificName,1,2,' '), NA),
+           synonym_base = ifelse(!is.null(syn_name), word(syn_name, 1, 2, ' '), NA)) %>%
+    mutate(ITISacceptedName = ifelse(is.na(ITISacceptedName),word(acc_name,1,2,' '), ITISacceptedName))
 
   # simplify data frame, deduplicate, and double check that there aren't hybrids in the synonyms
   sp_df = s %>%
     select(ITISacceptedName, synonym_base) %>%
     unique()
-  sp_df = sp_df[!sp_df$synonym_base %in% grep("X", sp_df$synonym_base, value = T, ignore.case = F),]
 
+  sp_df = sp_df[!sp_df$synonym_base %in% grep("X", sp_df$synonym_base, value = T, ignore.case = F),]
   sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
   sp_df <<- sp_df[order(sp_df$ITISacceptedName),]
 

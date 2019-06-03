@@ -40,8 +40,9 @@ AddDataFromFiles = function(aim_file_loc = NULL
                source_sp_name = code) %>%
         mutate(ObsDate = as.Date(Date)) %>%
         rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
-        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
+        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1],
+               pct.cover = prop.cover) %>%
+        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term, pct.cover) %>%
         unique()
       
       df_list[['BLM_AIM']] <<- aim_parse
@@ -69,8 +70,9 @@ AddDataFromFiles = function(aim_file_loc = NULL
                ObsYear = as.integer(VisitYear),
                source_sp_name = code) %>%
         rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name) == T])[1]) %>%
-        select(DataSet, decimalLatitude_NAD83, decimalLongitude_NAD83, source_sp_name, ObsDate, ObsYear, searched_term) %>%
+        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name) == T])[1],
+               pct.cover = prop.cover) %>%
+        select(DataSet, decimalLatitude_NAD83, decimalLongitude_NAD83, source_sp_name, ObsDate, ObsYear, searched_term, pct.cover) %>%
         unique()
       
       # convert from NAD83 to WGS84
@@ -90,7 +92,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
                  decimalLatitude = as.numeric(lapply(str_extract_all(as.character(lmf_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
         
         lmf_final <- lmf_df %>%
-          select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
+          select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear, pct.cover) %>%
           unique()
         
         df_list[['BLM_LMF']] <<- lmf_final  
@@ -109,7 +111,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
     if(any(code_list %in% unique(NISIMS_NPS$SCNTFC_CD)) == T){
       
       NPS_PARSE <- NISIMS_NPS %>%
-        select(SCNTFC_CD, CNTR_PT_CN, BEGIN_DT)%>%
+        select(SCNTFC_CD, CNTR_PT_CN, BEGIN_DT, EST_CVR_RT)%>%
         filter(CNTR_PT_CN != '' & SCNTFC_CD %in% code_list & BEGIN_DT >= startdate & BEGIN_DT <= enddate) %>%
         mutate(DataSet = "NISIMS_NPS"
                ,albersLatitude = as.numeric(str_extract(CNTR_PT_CN, pattern = "(?<=X: ).*(?= Y)"))         
@@ -119,8 +121,9 @@ AddDataFromFiles = function(aim_file_loc = NULL
                ,ObsYear = as.integer(format(as.Date(BEGIN_DT), "%Y"))) %>%
         filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
         rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name) == T])[1]) %>%
-        select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) %>%
+        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name) == T])[1],
+               pct.cover = EST_CVR_RT) %>%
+        select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term, pct.cover) %>%
         unique()
       
       n <- nrow(NPS_PARSE)
@@ -138,7 +141,8 @@ AddDataFromFiles = function(aim_file_loc = NULL
                  decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
         
         nisims_final_NPS <- nisims_df_NPS %>%
-          select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
+          select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear, pct.cover) %>%
+          mutate(pct.cover = ifelse(pct.cover > 1, pct.cover/100, pct.cover)) %>%
           unique()
         
         df_list[['nisims_nps']] <<- nisims_final_NPS  
@@ -157,7 +161,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
     if(any(code_list %in% unique(NISIMS_BLM$SCNTFC_CD)) == T){
       
       N_BLM_PARSE <- NISIMS_BLM %>%
-        select(SCNTFC_CD, CNTR_PT_CN, BEGIN_DT)%>%
+        select(SCNTFC_CD, CNTR_PT_CN, BEGIN_DT, EST_CVR_RT)%>%
         filter(CNTR_PT_CN != '' & SCNTFC_CD %in% code_list & BEGIN_DT >= startdate & BEGIN_DT <= enddate) %>%
         mutate(DataSet = "NISIMS_BLM"
                ,albersLatitude = as.numeric(str_extract(CNTR_PT_CN, '([^,]*)'))         
@@ -167,8 +171,9 @@ AddDataFromFiles = function(aim_file_loc = NULL
                ,ObsYear = as.integer(format(as.Date(BEGIN_DT), "%Y"))) %>%
         filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
         rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1]) %>%
-        select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term) %>%
+        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1],
+               pct.cover = EST_CVR_RT) %>%
+        select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term, pct.cover) %>%
         unique()
       
       n = nrow(N_BLM_PARSE)
@@ -186,7 +191,8 @@ AddDataFromFiles = function(aim_file_loc = NULL
                  decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
         
         nisims_final_BLM <- nisims_df_BLM %>%
-          select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear) %>%
+          select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear, pct.cover) %>%
+          mutate(pct.cover = ifelse(pct.cover > 1, pct.cover/100, pct.cover)) %>%
           unique()
         
         df_list[['nisims_blm']] <<- nisims_final_BLM 

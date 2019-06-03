@@ -9,25 +9,17 @@ Data_QAQC <- function(data=NULL){
   # Combine all existing dataframes from each source
   occ_merged <<- bind_rows(data)
 
-  if('EDDMapS' %in% unique(occ_merged$DataSet)){
-    occ_filter <<- occ_merged %>%
-      dplyr::select(DataSet, source_sp_name, searched_term, decimalLatitude,decimalLongitude, ObsDate, ObsYear,IdentificationCredibility,national_ownership,local_ownership) %>%
-      dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns
-      dplyr::filter(word(searched_term,1,2,' ') %in% sp_df$ITISacceptedName | word(searched_term,1,2,' ') %in% sp_df$synonym_base)
-  }else{
-    occ_filter <<- occ_merged %>%
-      dplyr::select(DataSet, source_sp_name, searched_term, decimalLatitude,decimalLongitude, ObsDate, ObsYear) %>%
-      dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns
-      dplyr::filter(word(searched_term,1,2,' ') %in% sp_df$ITISacceptedName | word(searched_term,1,2,' ') %in% sp_df$synonym_base)
-  }
-  
-    # Sort by scientific name and retain only unique records
+  occ_filter <<- occ_merged %>%
+    dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns
+    dplyr::filter(word(searched_term,1,2,' ') %in% sp_df$ITISacceptedName | word(searched_term,1,2,' ') %in% sp_df$synonym_base)
+
+      # Sort by scientific name and retain only unique records
     occ_all <- occ_filter %>%
-      mutate(ITIS_AcceptedName = ifelse(test = is.na(sp_df$ITISacceptedName[match(occ_filter$searched_term, sp_df$synonym_base)]),
-                                      sp_df$ITISacceptedName[match(word(occ_filter$searched_term,1,2,' '), sp_df$ITISacceptedName)],
-                                      sp_df$ITISacceptedName[match(word(occ_filter$searched_term,1,2,' '), sp_df$synonym_base)])) %>%
+      mutate(ITIS_AcceptedName = ifelse(test = is.na(sp_df$ITISacceptedName[match(searched_term, sp_df$synonym_base)]),
+                                      sp_df$ITISacceptedName[match(word(searched_term,1,2,' '), sp_df$ITISacceptedName)],
+                                      sp_df$ITISacceptedName[match(word(searched_term,1,2,' '), sp_df$synonym_base)])) %>%
       arrange(ITIS_AcceptedName) %>%
-      unique()  
+      unique()   
 
 
   if(exists('state_centroid')==FALSE){
@@ -62,19 +54,4 @@ Data_QAQC <- function(data=NULL){
 
   occ_all <<- occ_all[which((nchar(occ_all$latitude) > 5 & nchar(occ_all$longitude) > 5)),]
 
-    
-
-
-  #TO DO: remove museum collection lat/longs
-
 }
-
-
-# ExportBySpecies <- function(data){
-#   for (i in occ_all$ITIS_acceptedName){
-#   occ_filt <- occ_all %>% dplyr::filter(scientificName==i)
-#   write.csv(occ_filt, file = paste0("output/sp_occ_",gsub(" ","_",i), ".csv"))
-#   }
-# }
-
-# 5.5 - output data frame to csv for each species

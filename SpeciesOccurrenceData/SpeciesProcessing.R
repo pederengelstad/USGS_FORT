@@ -27,10 +27,6 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   # drop one word terms...too general
   t = t[str_count(t$scientificName, pattern = '\\w+') > 1,]
 
-  # not currently using this line because ITIS sometimes won't find synonyms without very specific TSNs
-  # base names will match the original searched term, thankfully
-  # t = t0[str_count(t0$scientificName, '\\s') <= 2,]
-
   # find synonyms using function from the taxize library (make sure to have most recent build!)
   s0 = suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))
 

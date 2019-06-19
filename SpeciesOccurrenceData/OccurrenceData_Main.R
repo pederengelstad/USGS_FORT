@@ -113,6 +113,11 @@ occ_all %>%
   group_by(DataSet) %>%
   summarize(count = n())
 
+occ_all %>%
+  select(ITIS_AcceptedName) %>%
+  group_by(ITIS_AcceptedName) %>%
+  summarize(count = n())
+
 write.csv(occ_all, 'E:/Users/engelstad/USGS/OccurrenceData/bishopsGoutweed_testing/test.csv')
 
 ########################################################################################################

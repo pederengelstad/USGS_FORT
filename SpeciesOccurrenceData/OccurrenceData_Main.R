@@ -25,7 +25,7 @@ if(length(new.packages)) install.packages(new.packages)
 # remotes::install_github("ropensci/spocc")
 # remotes::install_github("ropensci/taxize")
 
-setwd('E:/Users/engelstad/GitHub/USGS_FORT/SpeciesOccurrenceData/')
+setwd('C:/Users/peder/Documents/GitHub/Repositories/USGS_FORT/SpeciesOccurrenceData/')
 
 # !!! make sure you have the latest version of the source scripts to run the following lines
 # download.file(url="https://github.com/pederengelstad/USGS_FORT/archive/master.zip",destfile = 'OccScripts.zip', method = "curl")
@@ -46,7 +46,7 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines(''))
-sp_list = c('Bromus tectorum', 'Carex kobomugi', 'Cytisus scoparius')
+sp_list = c('Dreissena bugensis','Gambusia affinis')
 species_processing(sort(sp_list),USDA = T)
 sp_df
 species_search_list

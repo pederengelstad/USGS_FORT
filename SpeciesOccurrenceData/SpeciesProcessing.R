@@ -7,6 +7,15 @@
 #################################################################################
 
 
+#################################################################################
+#     SpeciesProcessing.R
+#     Author: Peder Engelstad
+#     Updated: 7/18/2018
+#     Purpose: Generate a list of search terms from ITIS based on accepted names
+#              and accepted synonyms (NO SUBSPECIES, VAR, OR HYBRIDS!)
+#################################################################################
+
+
 species_processing <- function(sp_list=NULL, USDA=TRUE){
   
   library(ritis, verbose = F, quietly = T, warn.conflicts = F)
@@ -15,69 +24,69 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   library(gsheet, verbose = F, quietly = T, warn.conflicts = F)
   
   # get required TSNs to efficiently process species names using ITIS
-  t0 = unique(bind_rows(get_tsn_(searchterm = sort(sp_list),accepted = F, messages = T)))
-  t0 = t0[, c('nameUsage','scientificName','tsn')]
-
+  t0 <- unique(bind_rows(get_tsn_(searchterm = sort(sp_list),accepted = F, messages = T)))
+  t0 <- t0[, c('nameUsage','scientificName','tsn')]
+  
   # drop names that aren't in the original search list or are 'accepted'. this speeds up synonym search time.
-  t = t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted'),]
-
+  t <- t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted' | t0$nameUsage == 'valid'),]
+  
   # drop hybrids
-  t = t[!t$scientificName %in% grep("X", t$scientificName, value = T, ignore.case = F),]
-
+  t <- t[!t$scientificName %in% grep("X", t$scientificName, value = T, ignore.case = F),]
+  
   # drop one word terms...too general
-  t = t[str_count(t$scientificName, pattern = '\\w+') > 1,]
-
+  t <- t[str_count(t$scientificName, pattern = '\\w+') > 1,]
+  
   # find synonyms using function from the taxize library (make sure to have most recent build!)
-  s0 = suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))
-
+  s0 <- suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))
+  
   # make sure subspecies aren't included in synonym lists. can lead to erroneous results when using base names later
   # variations are dropped (i.e. var.; ssp.; cv. and so on) but not NAs (indicate a lack of synonyms)
-  s0 = s0[(str_count(s0$syn_name,'\\s') <= 2 | is.na(s0$syn_name)==T),]
-
+  s0 <- s0[(str_count(s0$syn_name,'\\s') <= 2 | is.na(s0$syn_name)==T),]
+  
+  if(!('acc_name' %in% colnames(s0))) s0$acc_name <- NA
+  
   # add accepted terms to synonym data frame
-  s = s0 %>%
+  s <- s0 %>%
     full_join(t[t$nameUsage=='accepted',], by=c('syn_tsn'='tsn')) %>%
     full_join(t[t$nameUsage!='not accepted',], by=c('acc_tsn'='tsn')) %>%
     mutate(scientificName = coalesce(scientificName.x, scientificName.y)) %>%
     mutate(nameUsage = coalesce(nameUsage.x, nameUsage.y)) %>%
     rowwise() %>%
-    mutate(ITISacceptedName = ifelse(nameUsage=='accepted', word(scientificName,1,2,' '), NA),
+    mutate(ITISacceptedName = ifelse(nameUsage=='accepted' | nameUsage=='valid', word(scientificName,1,2,' '), NA),
            synonym_base = ifelse(!is.null(syn_name), word(syn_name, 1, 2, ' '), NA)) %>%
     mutate(ITISacceptedName = ifelse(is.na(ITISacceptedName),word(acc_name,1,2,' '), ITISacceptedName))
-
+  
   # simplify data frame, deduplicate, and double check that there aren't hybrids in the synonyms
-  sp_df = s %>%
+  sp_df <- s %>%
     select(ITISacceptedName, synonym_base) %>%
     unique()
-
-  sp_df = sp_df[!sp_df$synonym_base %in% grep("X", sp_df$synonym_base, value = T, ignore.case = F),]
+  
+  sp_df <- sp_df[!sp_df$synonym_base %in% grep("X", sp_df$synonym_base, value = T, ignore.case = F),]
   sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
   sp_df <<- sp_df[order(sp_df$ITISacceptedName),]
-
+  
   # synthesize full, unique species name list including synonyms
   species_search_list <<- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
-
+  
   sp_list[!sp_list %in% species_search_list]
-    
+  
   # search the USDA plants database (update 2019-05-06) for their codes
-    if(USDA == TRUE){
-      
-      print("Finding USDA species codes")
-      
-      plants.db = as.data.frame(gsheet::gsheet2tbl("https://docs.google.com/spreadsheets/d/1WkSt3EcOUkiRPRWeEZTKuQvkjhYFQre_Ox-I3FpPHbA/edit?usp=sharing"))
-      
-      sp_df <<- sp_df %>%
-        left_join(plants.db, by = c('ITISacceptedName' = 'Scientific_Name')) %>%
-        left_join(plants.db, by = c('synonym_base' = 'Scientific_Name')) %>%
-        rowwise() %>%
-        mutate(usda_codes = ifelse(all(is.na(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),NA,
-                                   str_flatten(unique(na.omit(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),
-                                               collapse = ',')))
-      
-      rm(plants.db)
-      
-      print("Species Processing Complete!")
-      
-    }
-
+  if(USDA == TRUE){
+    
+    print("Finding USDA species codes")
+    
+    plants.db = as.data.frame(gsheet::gsheet2tbl("https://docs.google.com/spreadsheets/d/1WkSt3EcOUkiRPRWeEZTKuQvkjhYFQre_Ox-I3FpPHbA/edit?usp=sharing"))
+    
+    sp_df <<- sp_df %>%
+      left_join(plants.db, by = c('ITISacceptedName' = 'Scientific_Name')) %>%
+      left_join(plants.db, by = c('synonym_base' = 'Scientific_Name')) %>%
+      rowwise() %>%
+      mutate(usda_codes = ifelse(all(is.na(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),NA,
+                                 str_flatten(unique(na.omit(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),
+                                             collapse = ',')))
+    
+    rm(plants.db)
+    
+    print("Species Processing Complete!") 
+  } 
 }

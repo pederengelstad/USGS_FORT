@@ -56,7 +56,7 @@ species_search_list
 ################################################################################
 #3. Pull data from API Sources
 # source('./API_Sources.R')
-source('./API_Sources_NoInat.R')
+source('./API_Sources.R')
 
 # Query data available from API and loads into df_list the resulting data frame.
 # 3.1  api_data Function notes:
@@ -88,10 +88,10 @@ api_data(species_list = species_search_list
 
 source('./DataFromFiles.R')
 
-aim_file = 'E:/Users/engelstad/USGS/data/BLM/AIM.allsp.pnts.May2018.csv'
-lmf_file = 'E:/Users/engelstad/USGS/data/BLM/LMF.allsp.csv'
-nisims_nps_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_NPS_L48.csv'
-nisims_blm_file = 'E:/Users/engelstad/USGS/data/NISIMS/NISIMS_BLM_L48.csv'
+aim_file = 'J:/Projects/NPS/Data/OccDataSources/AIM.allsp.pnts.May2018.csv'
+lmf_file = 'J:/Projects/NPS/Data/OccDataSources/LMF.allsp.csv'
+nisims_nps_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_NPS_L48.csv'
+nisims_blm_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_BLM_L48.csv'
 
 AddDataFromFiles(aim_file_loc = aim_file,
                  lmf_file_loc = lmf_file,
@@ -120,7 +120,7 @@ occ_all %>%
   group_by(ITIS_AcceptedName) %>%
   summarize(count = n())
 
-write.csv(occ_all, 'E:/Users/engelstad/USGS/OccurrenceData/bishopsGoutweed_testing/test.csv')
+write.csv(occ_all, 'C:/Users/pengelstad/Documents/20191217/test.csv')
 
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes

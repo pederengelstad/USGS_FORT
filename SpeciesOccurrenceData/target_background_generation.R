@@ -1,6 +1,6 @@
 library(tidyverse)
 
-setwd('E:/Users/engelstad/GitHub/USGS_FORT/SpeciesOccurrenceData/')
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Full USDA Plants List
 db = as_tibble(read.csv('usda_full_list.txt', header = T, stringsAsFactors = F))

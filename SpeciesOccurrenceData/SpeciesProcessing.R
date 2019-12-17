@@ -6,16 +6,6 @@
 #              and accepted synonyms (NO SUBSPECIES, VAR, OR HYBRIDS!)
 #################################################################################
 
-
-#################################################################################
-#     SpeciesProcessing.R
-#     Author: Peder Engelstad
-#     Updated: 7/18/2018
-#     Purpose: Generate a list of search terms from ITIS based on accepted names
-#              and accepted synonyms (NO SUBSPECIES, VAR, OR HYBRIDS!)
-#################################################################################
-
-
 species_processing <- function(sp_list=NULL, USDA=TRUE){
   
   library(ritis, verbose = F, quietly = T, warn.conflicts = F)
@@ -31,10 +21,13 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   t <- t0[(t0$scientificName %in% sp_list | t0$nameUsage == 'accepted' | t0$nameUsage == 'valid'),]
   
   # drop hybrids
-  t <- t[!t$scientificName %in% grep("X", t$scientificName, value = T, ignore.case = F),]
+  t <- t[!t$scientificName %in% grep("×", t$scientificName, value = T, ignore.case = F),]
   
   # drop one word terms...too general
-  t <- t[str_count(t$scientificName, pattern = '\\w+') > 1,]
+  t <- t[str_count(t$scientificName, pattern = '\\w+') > 1, ]
+  
+  # drop ssp and var using word term counts
+  t <- t[str_count(t$scientificName, pattern = '\\w+') == 2, ]
   
   # find synonyms using function from the taxize library (make sure to have most recent build!)
   s0 <- suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))
@@ -61,14 +54,16 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     select(ITISacceptedName, synonym_base) %>%
     unique()
   
-  sp_df <- sp_df[!sp_df$synonym_base %in% grep("X", sp_df$synonym_base, value = T, ignore.case = F),]
+  sp_df <- sp_df[!sp_df$synonym_base %in% grep("×", sp_df$synonym_base, value = T, ignore.case = F),]
   sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
-  sp_df <<- sp_df[order(sp_df$ITISacceptedName),]
+  
+  # can drop the NA row for these species
+  na.drop = suppressWarnings(sp_df %>% group_by(ITISacceptedName) %>% count() %>% filter(n > 1) %>% select(ITISacceptedName))$ITISacceptedName
+  sp_df = sp_df %>% filter((!is.na(synonym_base) & ITISacceptedName %in% na.drop) | (! ITISacceptedName %in% na.drop)) 
+  assign("sp_df", sp_df[order(sp_df$ITISacceptedName),] %>% filter(!is.na(ITISacceptedName)), envir = .GlobalEnv)
   
   # synthesize full, unique species name list including synonyms
   species_search_list <<- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
-  
-  sp_list[!sp_list %in% species_search_list]
   
   # search the USDA plants database (update 2019-05-06) for their codes
   if(USDA == TRUE){

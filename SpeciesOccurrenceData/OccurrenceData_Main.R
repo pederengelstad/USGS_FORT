@@ -25,7 +25,7 @@ if(length(new.packages)) install.packages(new.packages)
 # remotes::install_github("ropensci/spocc")
 # remotes::install_github("ropensci/taxize")
 
-setwd('C:/Users/peder/Documents/GitHub/Repositories/USGS_FORT/SpeciesOccurrenceData/')
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # !!! make sure you have the latest version of the source scripts to run the following lines
 # download.file(url="https://github.com/pederengelstad/USGS_FORT/archive/master.zip",destfile = 'OccScripts.zip', method = "curl")
@@ -33,7 +33,7 @@ setwd('C:/Users/peder/Documents/GitHub/Repositories/USGS_FORT/SpeciesOccurrenceD
 
 ################################################################################
 #2. Check for synonyms from ITIS and develop a finalized species list
-library(tidyverse, verbose = F)
+library(tidyverse, verbose = F, quietly = T)
 source('./SpeciesProcessing.R')
 
 # Notes:
@@ -45,11 +45,13 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
-# sp_list = suppressWarnings(readLines(''))
-sp_list = c('Dreissena bugensis','Gambusia affinis')
+sp_list = suppressWarnings(readLines("C:/Users/pengelstad/Documents/20191217/splist.txt"))
+# sp_list = c('Dreissena bugensis','Gambusia affinis')
 species_processing(sort(sp_list),USDA = T)
-sp_df
+sp_df = sp_df[order(sp_df$ITISacceptedName),] %>% filter(!is.na(ITISacceptedName))
+if(any(!sp_list %in% unique(sp_df$ITISacceptedName))) print(sp_list[!sp_list %in% unique(sp_df$ITISacceptedName)])
 species_search_list
+
 
 ################################################################################
 #3. Pull data from API Sources
@@ -72,10 +74,10 @@ enddate <- as.Date(Sys.Date())
 
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 100
+         , limit = 999999
          , startDate = startdate
          , endDate = enddate
-         , US_only = F
+         , US_only = T
 )
 
 

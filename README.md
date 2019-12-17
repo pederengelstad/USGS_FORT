@@ -8,4 +8,6 @@ Overview of code files:
 * SpeciesProcessing: gather accepted names and synonyms of species based on [ITIS](https://itis.gov/) taxonomy.
 * target_background_generation: generates a list of all known introduced species (L48 only) from [USDA PLANTS](https://plants.sc.egov.usda.gov/).
 
+For questions or more information contact: [Peder Engelstad](mailto:peder.engelstad@colostate.edu) at Colorado State University.
+
 [![DOI](https://zenodo.org/badge/133727553.svg)](https://zenodo.org/badge/latestdoi/133727553)

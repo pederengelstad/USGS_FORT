@@ -5,6 +5,9 @@
 
 require('tidyverse')
 require('sf')
+require('sqldf')
+
+sp_df_exp = as.data.frame(sp_df) %>% separate(usda_codes, into = paste("V", 1:10), sep = ',')
 
 AddDataFromFiles = function(aim_file_loc = NULL
                             , lmf_file_loc = NULL
@@ -25,11 +28,13 @@ AddDataFromFiles = function(aim_file_loc = NULL
   
   #parse AIM Data
   if(!is.null(aim_file_loc)){
+    
     # load in AIM data from file location
     aim_data = read.csv(aim_file_loc, header = T, stringsAsFactors = F)
     
     #filter data for those species found in search list and add columns to facilitate merging with other occurrence datasets
     if(!(any(code_list %in% unique(aim_data$code)) == F)){
+      
       aim_parse = aim_data %>%
         filter(code %in% code_list) %>%
         mutate(DataSet = 'BLM_AIM',
@@ -39,9 +44,12 @@ AddDataFromFiles = function(aim_file_loc = NULL
                ObsYear = as.integer(VisitYear),
                source_sp_name = code) %>%
         mutate(ObsDate = as.Date(Date)) %>%
-        rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1],
-               pct.cover = prop.cover) %>%
+        mutate(pct.cover = prop.cover)
+      
+      aim_parse = sqldf('SELECT * FROM aim_parse
+       LEFT JOIN sp_df_exp ON source_sp_name = sp_df_exp."V 1"
+      ') %>%
+        mutate(searched_term = ITISacceptedName) %>%
         select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term, pct.cover) %>%
         unique()
       
@@ -69,9 +77,12 @@ AddDataFromFiles = function(aim_file_loc = NULL
                ObsDate = as.Date(VisitDate),
                ObsYear = as.integer(VisitYear),
                source_sp_name = code) %>%
-        rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name) == T])[1],
-               pct.cover = prop.cover) %>%
+        mutate(pct.cover = prop.cover)
+      
+      lmf_parse = sqldf('SELECT * FROM lmf_parse
+       LEFT JOIN sp_df_exp ON source_sp_name = "V 1"
+      ') %>%
+        mutate(searched_term = ITISacceptedName) %>%
         select(DataSet, decimalLatitude_NAD83, decimalLongitude_NAD83, source_sp_name, ObsDate, ObsYear, searched_term, pct.cover) %>%
         unique()
       
@@ -120,9 +131,13 @@ AddDataFromFiles = function(aim_file_loc = NULL
                ,ObsDate = as.Date(BEGIN_DT)
                ,ObsYear = as.integer(format(as.Date(BEGIN_DT), "%Y"))) %>%
         filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
-        rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name) == T])[1],
-               pct.cover = EST_CVR_RT) %>%
+        mutate(pct.cover = EST_CVR_RT)
+      
+      
+      NPS_PARSE = sqldf('SELECT * FROM NPS_PARSE
+       LEFT JOIN sp_df_exp ON source_sp_name = "V 1"
+      ') %>%
+        mutate(searched_term = ITISacceptedName) %>%
         select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term, pct.cover) %>%
         unique()
       
@@ -153,7 +168,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
   ####################################################################################
   # parse BLM NISIMS records, which format the center point field slightly differently
   ####################################################################################
-
+  
   if(!is.null(nisims_blm_file_loc)){
     
     NISIMS_BLM <- read.csv(nisims_blm_file_loc, header = T, stringsAsFactors = F) 
@@ -170,9 +185,12 @@ AddDataFromFiles = function(aim_file_loc = NULL
                ,ObsDate = as.Date(BEGIN_DT)
                ,ObsYear = as.integer(format(as.Date(BEGIN_DT), "%Y"))) %>%
         filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
-        rowwise() %>%
-        mutate(searched_term = unique(sp_df$ITISacceptedName[str_detect(sp_df$usda_codes, source_sp_name)==T])[1],
-               pct.cover = EST_CVR_RT) %>%
+        mutate(pct.cover = EST_CVR_RT)
+      
+      N_BLM_PARSE = sqldf('SELECT * FROM N_BLM_PARSE
+       LEFT JOIN sp_df_exp ON source_sp_name = "V 1"
+      ') %>%
+        mutate(searched_term = ITISacceptedName) %>%
         select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, searched_term, pct.cover) %>%
         unique()
       

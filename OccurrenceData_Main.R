@@ -17,7 +17,8 @@
 
 
 ################################
-list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","scrubr",'spocc',"stringr","taxize","tidyverse")
+list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","scrubr",'spocc',
+                      "stringr","taxize","tidyverse","sqldf")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -45,11 +46,14 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
-sp_list = suppressWarnings(readLines("C:/Users/pengelstad/Documents/20191217/splist.txt"))
-# sp_list = c('Dreissena bugensis','Gambusia affinis')
+# sp_list = suppressWarnings(readLines("C:/Users/pengelstad/Documents/20191217/splist.txt"))
+sp_list = c('Populus','Tamarix', 'Salix')
 species_processing(sort(sp_list),USDA = T)
 sp_df = sp_df[order(sp_df$ITISacceptedName),] %>% filter(!is.na(ITISacceptedName))
-if(any(!sp_list %in% unique(sp_df$ITISacceptedName))) print(sp_list[!sp_list %in% unique(sp_df$ITISacceptedName)])
+sp_df = sp_df %>%
+  filter(word(ITISacceptedName, 1, 1) %in% sp_list) %>%
+  select(ITISacceptedName, synonym_base, usda_codes)
+# if(any(!sp_list %in% unique(sp_df$ITISacceptedName))) print(sp_list[!sp_list %in% unique(sp_df$ITISacceptedName)])
 species_search_list
 
 
@@ -120,7 +124,9 @@ occ_all %>%
   group_by(ITIS_AcceptedName) %>%
   summarize(count = n())
 
-write.csv(occ_all, 'C:/Users/pengelstad/Documents/20191217/test.csv')
+# write.csv(occ_all, 'C:/Users/pengelstad/Documents/20191217/test.csv')
+
+write.csv(occ_all, )
 
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes

@@ -12,6 +12,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   library(taxize, verbose = F, quietly = T, warn.conflicts = F)
   library(tidyverse, verbose = F, quietly = T, warn.conflicts = F)
   library(gsheet, verbose = F, quietly = T, warn.conflicts = F)
+  library(Hmisc)
   
   # get required TSNs to efficiently process species names using ITIS
   t0 <- unique(bind_rows(get_tsn_(searchterm = sort(sp_list),accepted = F, messages = T)))
@@ -32,38 +33,49 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   # find synonyms using function from the taxize library (make sure to have most recent build!)
   s0 <- suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))
   
-  # make sure subspecies aren't included in synonym lists. can lead to erroneous results when using base names later
-  # variations are dropped (i.e. var.; ssp.; cv. and so on) but not NAs (indicate a lack of synonyms)
-  s0 <- s0[(str_count(s0$syn_name,'\\s') <= 2 | is.na(s0$syn_name)==T),]
+  if(nrow(s0) > 0){
+    
+    if(!('acc_name' %in% colnames(s0))) s0$acc_name <- NA
+    
+    # add accepted terms to synonym data frame
+    s <- s0 %>%
+      full_join(t[t$nameUsage=='accepted',], by=c('syn_tsn'='tsn')) %>%
+      full_join(t[t$nameUsage!='not accepted',], by=c('acc_tsn'='tsn')) %>%
+      mutate(scientificName = coalesce(scientificName.x, scientificName.y)) %>%
+      mutate(nameUsage = coalesce(nameUsage.x, nameUsage.y)) %>%
+      rowwise() %>%
+      mutate(ITISacceptedName = ifelse(nameUsage=='accepted' | nameUsage=='valid', word(scientificName,1,2,' '), NA),
+             synonym = ifelse(!is.null(syn_name), Hmisc::capitalize(tolower(syn_name)), NA)) %>%
+      mutate(ITISacceptedName = ifelse(is.na(ITISacceptedName),word(acc_name,1,2,' '), ITISacceptedName))
+    
+    # simplify data frame, deduplicate, and double check that there aren't hybrids in the synonyms
+    sp_df <- s %>%
+      select(ITISacceptedName, synonym) %>%
+      unique()
+    
+  } else {
+    
+    sp_df <- t %>%
+      mutate(syn_name = NA) %>%
+      mutate(ITISacceptedName = ifelse(nameUsage=='accepted' | nameUsage=='valid', word(scientificName,1,2,' '), NA),
+             synonym = ifelse(!is.null(syn_name), Hmisc::capitalize(tolower(syn_name)), NA)) %>%
+      mutate(ITISacceptedName = ifelse(is.na(ITISacceptedName),word(acc_name,1,2,' '), ITISacceptedName)) %>%
+      select(ITISacceptedName, synonym) %>%
+      unique()
+    
+  }
   
-  if(!('acc_name' %in% colnames(s0))) s0$acc_name <- NA
   
-  # add accepted terms to synonym data frame
-  s <- s0 %>%
-    full_join(t[t$nameUsage=='accepted',], by=c('syn_tsn'='tsn')) %>%
-    full_join(t[t$nameUsage!='not accepted',], by=c('acc_tsn'='tsn')) %>%
-    mutate(scientificName = coalesce(scientificName.x, scientificName.y)) %>%
-    mutate(nameUsage = coalesce(nameUsage.x, nameUsage.y)) %>%
-    rowwise() %>%
-    mutate(ITISacceptedName = ifelse(nameUsage=='accepted' | nameUsage=='valid', word(scientificName,1,2,' '), NA),
-           synonym_base = ifelse(!is.null(syn_name), word(syn_name, 1, 2, ' '), NA)) %>%
-    mutate(ITISacceptedName = ifelse(is.na(ITISacceptedName),word(acc_name,1,2,' '), ITISacceptedName))
-  
-  # simplify data frame, deduplicate, and double check that there aren't hybrids in the synonyms
-  sp_df <- s %>%
-    select(ITISacceptedName, synonym_base) %>%
-    unique()
-  
-  sp_df <- sp_df[!sp_df$synonym_base %in% grep("×", sp_df$synonym_base, value = T, ignore.case = F),]
-  sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym_base | is.na(sp_df$ITISacceptedName==sp_df$synonym_base)),]
+  sp_df <- sp_df[!sp_df$synonym %in% grep("×", sp_df$synonym, value = T, ignore.case = F),]
+  sp_df <- sp_df[(sp_df$ITISacceptedName!=sp_df$synonym | is.na(sp_df$ITISacceptedName==sp_df$synonym)),]
   
   # can drop the NA row for these species
   na.drop = suppressWarnings(sp_df %>% group_by(ITISacceptedName) %>% count() %>% filter(n > 1) %>% select(ITISacceptedName))$ITISacceptedName
-  sp_df = sp_df %>% filter((!is.na(synonym_base) & ITISacceptedName %in% na.drop) | (! ITISacceptedName %in% na.drop)) 
+  sp_df = sp_df %>% filter((!is.na(synonym) & ITISacceptedName %in% na.drop) | (! ITISacceptedName %in% na.drop)) 
   assign("sp_df", sp_df[order(sp_df$ITISacceptedName),] %>% filter(!is.na(ITISacceptedName)), envir = .GlobalEnv)
   
   # synthesize full, unique species name list including synonyms
-  species_search_list <<- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym_base))))
+  species_search_list <<- sort(unique(na.omit(c(sp_df$ITISacceptedName, sp_df$synonym))))
   
   # search the USDA plants database (update 2019-05-06) for their codes
   if(USDA == TRUE){
@@ -74,11 +86,12 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     
     sp_df <<- sp_df %>%
       left_join(plants.db, by = c('ITISacceptedName' = 'Scientific_Name')) %>%
-      left_join(plants.db, by = c('synonym_base' = 'Scientific_Name')) %>%
+      left_join(plants.db, by = c('synonym' = 'Scientific_Name')) %>%
       rowwise() %>%
       mutate(usda_codes = ifelse(all(is.na(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),NA,
                                  str_flatten(unique(na.omit(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),
-                                             collapse = ',')))
+                                             collapse = ','))) %>%
+      select(-c(Accepted_Symbol.x, Accepted_Symbol.y, Synonym_Symbol.x, Synonym_Symbol.y))
     
     rm(plants.db)
     

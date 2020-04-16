@@ -6,21 +6,38 @@ library(tidyverse)
 
 Data_QAQC <- function(data=NULL){
 
-  # Combine all existing dataframes from each source
-  occ_merged <<- bind_rows(data)
+  occ_merged <- bind_rows(data) %>%
+   dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude))
 
-  occ_filter <<- occ_merged %>%
-    dplyr::filter(ObsDate >= startdate & ObsDate <= Sys.Date() & !is.na(ObsDate) & !is.na(decimalLatitude)) %>%    # remove NAs from individual columns
-    dplyr::filter(word(searched_term,1,2,' ') %in% sp_df$ITISacceptedName | word(searched_term,1,2,' ') %in% sp_df$synonym_base)
+  sp_df2 = sp_df %>%
+    mutate(ITIS_final = ITISacceptedName)
 
-      # Sort by scientific name and retain only unique records
-    occ_all <- occ_filter %>%
-      mutate(ITIS_AcceptedName = ifelse(test = is.na(sp_df$ITISacceptedName[match(searched_term, sp_df$synonym_base)]),
-                                      sp_df$ITISacceptedName[match(word(searched_term,1,2,' '), sp_df$ITISacceptedName)],
-                                      sp_df$ITISacceptedName[match(word(searched_term,1,2,' '), sp_df$synonym_base)])) %>%
-      arrange(ITIS_AcceptedName) %>%
-      unique()   
+  # Sort by scientific name and retain only unique records
+  occ_merged = occ_merged %>%
+    mutate(test1 = str_match(pattern = '.[:upper:].*', word(source_sp_name,start = 3,end = -1)),
+           test2 = str_match(pattern = '[:upper:].*', word(source_sp_name,start = 3,end = -1))) %>%
+    rowwise() %>%
+    mutate(sp_clean = ifelse(length(test1)>length(test2), 
+                             gsub(test1,'',source_sp_name), 
+                             gsub(test2,'',source_sp_name)))  %>%
+    mutate(sp_clean = ifelse(is.na(sp_clean), source_sp_name, sp_clean))
 
+  occ_merged = occ_merged %>%
+    mutate(sp_clean = gsub('( (\\())','',sp_clean)) %>%
+    mutate(sp_clean = gsub(' $','',sp_clean)) %>%
+    mutate(sp_clean = gsub('subsp.','ssp.',sp_clean)) %>%
+    mutate(sp_clean = trimws(sp_clean)) %>%
+    select(-c(test1, test2)) %>%
+    unique()
+
+  occ_merged = occ_merged %>%
+    left_join(sp_df2[, c("ITIS_final","ITISacceptedName")] %>% unique(), by = c('sp_clean' = 'ITISacceptedName')) %>%
+    left_join(sp_df2[, c("ITIS_final","synonym")] %>% unique(), by = c('sp_clean' = 'synonym')) %>%
+    mutate(ITIS_final = coalesce(ITIS_final.x,ITIS_final.y)) %>%
+    select(-c(ITIS_final.x,ITIS_final.y)) %>%
+    filter(!is.na(ITIS_final))
+
+  cat('Original number of merged records: ', nrow(occ_merged), '\n')
 
   if(exists('state_centroid')==FALSE){
     #pull in state boundary data from US census as needed
@@ -45,13 +62,18 @@ Data_QAQC <- function(data=NULL){
   }
 
     # remove possible coordinate errors, including centroids
-  occ_all <- occ_all %>%
+  occ_all <- occ_merged %>%
     scrubr::coord_impossible() %>%
     scrubr::coord_incomplete() %>%
     scrubr::coord_unlikely() %>%
-    filter(!(latitude %in% state_centroid$y) & !(latitude %in% county_centroid$y) &
-           !(longitude %in% state_centroid$x) & !(longitude %in% county_centroid$x))
+    filter(!(decimalLatitude %in% state_centroid$y) & !(decimalLatitude %in% county_centroid$y) &
+             !(decimalLongitude %in% state_centroid$x) & !(decimalLongitude %in% county_centroid$x))
+             
+  occ_all <- occ_all[which((nchar(occ_all$decimalLatitude) > 5 & nchar(occ_all$decimalLongitude) > 5)),]
 
-  occ_all <<- occ_all[which((nchar(occ_all$latitude) > 5 & nchar(occ_all$longitude) > 5)),]
+  cat('Final number of records after filtering: ', nrow(occ_all), '\n')
+
+  assign("occ_all", occ_all, envir = .GlobalEnv)
+
 
 }

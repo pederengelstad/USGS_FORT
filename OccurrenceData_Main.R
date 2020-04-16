@@ -5,7 +5,7 @@
 # Affiliation: Colorado State University
 # Contact: pengel@colostate.edu
 # Origin Date: 3/7/2018
-# Last Edited: 11/15/2018
+# Last Edited: 04/04/2020
 # Purpose: Download and combine species occurrence data, perform QA/QC, and export to CSV
 # Script Purpose: Pull occurrence records from API and hard-coded data sources
 #
@@ -13,12 +13,12 @@
 #          Also, a huge thank you to Scott Chamberlin at rOpenSci for developing packages
 #          like 'spocc' and for being so responsive/helpful!
 #
-# Contact: pengel@colostate.edu
+# Contact: peder.engelstad@colostate.edu
 
 
 ################################
 list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","scrubr",'spocc',
-                      "stringr","taxize","tidyverse","sqldf")
+                      "stringr","taxize","tidyverse","sqldf", "lubridate","Hmisc","sf")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 
@@ -47,19 +47,16 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines("C:/Users/pengelstad/Documents/20191217/splist.txt"))
-sp_list = c('Populus','Tamarix', 'Salix')
+sp_list = c('Bromus tectorum', 'Bromus rubens', 'Euonymus alatus', 'Euonymus occidentalis', 
+            'Pennisetum setaceum', 'Cenchrus ciliaris', 'Halogeton glameratus', 'Ventenata dubia')
 species_processing(sort(sp_list),USDA = T)
-sp_df = sp_df[order(sp_df$ITISacceptedName),] %>% filter(!is.na(ITISacceptedName))
-sp_df = sp_df %>%
-  filter(word(ITISacceptedName, 1, 1) %in% sp_list) %>%
-  select(ITISacceptedName, synonym_base, usda_codes)
-# if(any(!sp_list %in% unique(sp_df$ITISacceptedName))) print(sp_list[!sp_list %in% unique(sp_df$ITISacceptedName)])
+
+# This is the master list. It does contain var and ssp but only if they are explicitly defined in ITIS as synonyms
 species_search_list
 
 
 ################################################################################
 #3. Pull data from API Sources
-# source('./API_Sources.R')
 source('./API_Sources.R')
 
 # Query data available from API and loads into df_list the resulting data frame.
@@ -78,7 +75,7 @@ enddate <- as.Date(Sys.Date())
 
 api_data(species_list = species_search_list
          , sources = api_sources
-         , limit = 999999
+         , limit = 500
          , startDate = startdate
          , endDate = enddate
          , US_only = T
@@ -92,15 +89,23 @@ api_data(species_list = species_search_list
 
 source('./DataFromFiles.R')
 
-aim_file = 'J:/Projects/NPS/Data/OccDataSources/AIM.allsp.pnts.May2018.csv'
-lmf_file = 'J:/Projects/NPS/Data/OccDataSources/LMF.allsp.csv'
-nisims_nps_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_NPS_L48.csv'
-nisims_blm_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_BLM_L48.csv'
-
-AddDataFromFiles(aim_file_loc = aim_file,
-                 lmf_file_loc = lmf_file,
-                 nisims_nps_file_loc = nisims_nps_file,
-                 nisims_blm_file_loc = nisims_blm_file)
+# aim_file = 'J:/Projects/NPS/Data/OccDataSources/AIM.allsp.pnts.May2018.csv'
+aim_file_loc = "C:/Users/peder/Documents/USGS/Data/BLM/AIM.allsp.pnts.May2018.csv"
+# lmf_file = 'J:/Projects/NPS/Data/OccDataSources/LMF.allsp.csv'
+lmf_file_loc = "C:/Users/peder/Documents/USGS/Data/BLM/LMF.allsp.csv"
+# nisims_nps_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_NPS_L48.csv'
+nisims_nps_file_loc = "C:/Users/peder/Documents/USGS/Data/NISIMS/NISIMS_NPS_L48.csv"
+# nisims_blm_file_loc = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_BLM_L48.csv'
+nisims_blm_file_loc = "C:/Users/peder/Documents/USGS/Data/NISIMS/NISIMS_BLM_L48.csv"
+calflora_file_loc = 'C:/Users/peder/Downloads/calflora-out.csv'
+imap_file_loc = "C:/Users/peder/Downloads/Export__2020_04_10_123648593/PRESENCE_POINT__2020_04_10_123644593.csv"
+AddDataFromFiles(aim_file_loc = aim_file_loc,
+                 lmf_file_loc = lmf_file_loc,
+                 nisims_nps_file_loc = nisims_nps_file_loc,
+                 nisims_blm_file_loc = nisims_blm_file_loc,
+                 calflora_file_loc = calflora_file_loc,
+                 imap_file_loc = imap_file_loc
+                 )
 
 ########################################################################################################
 #4. Perform QA/QC on occurrence records
@@ -108,7 +113,7 @@ source('./DataCleaning.R')
 
 # 4.1  This function performs several actions to filter the downloaded data.
 #      A. It first combines the data frames from the selected sources (occ_merged)
-#      B. Then it removes records with dates (somehow) in the future and missing lat/long (occ_filter)
+#      B. Then it removes records with dates (somehow) in the future and missing lat/long
 #      C. A new column of the officially accepted ITIS species name and genus is appended (occ_all)
 #      D. occ_all is then de-duplicated and sorted alphabetically by species name as a final data object
 
@@ -117,32 +122,31 @@ Data_QAQC(df_list)
 occ_all %>%
   select(DataSet) %>%
   group_by(DataSet) %>%
-  summarize(count = n())
+  summarise(count = n())
 
 occ_all %>%
-  select(ITIS_AcceptedName) %>%
-  group_by(ITIS_AcceptedName) %>%
-  summarize(count = n())
+  select(ITIS_final, source_sp_name, searched_term) %>%
+  group_by(ITIS_final, source_sp_name, searched_term) %>%
+  summarise(count = n())
 
-# write.csv(occ_all, 'C:/Users/pengelstad/Documents/20191217/test.csv')
-
-write.csv(occ_all, )
+write.csv(occ_all, './test.csv')
 
 ########################################################################################################
 # 5. Quickly view species of interest on a map for QA purposes
 library(leaflet)
 library(viridis)
 library(htmltools)
-csv = read.csv('E:/Users/engelstad/USGS/OccurrenceData/bishopsGoutweed_testing/test.csv', header=T, stringsAsFactors = F)
+csv = read.csv('test.csv', header=T, stringsAsFactors = F)
 n = length(unique(occ_all$DataSet))
 pal = colorFactor(rainbow(n), occ_all$DataSet)
 
 # csv = csv[csv$ITIS_AcceptedName=='Oplismenus undulatifolius',]
-spatial_occ <- SpatialPointsDataFrame(data = occ_all, coords = occ_all[c('latitude','longitude')],proj4string = CRS("+init=epsg:4326"))
+spatial_occ <- SpatialPointsDataFrame(data = occ_all, coords = occ_all[c('decimalLatitude','decimalLongitude')],
+                                      proj4string = CRS("+init=epsg:4326"))
 
 m <- leaflet(data=spatial_occ) %>%
   addTiles() %>%  # Add default tiles
-  addCircleMarkers(lng=~longitude, lat=~latitude
+  addCircleMarkers(lng=~decimalLongitude, lat=~decimalLatitude
                    , fillColor = ~pal(DataSet)
                    , stroke=F, fillOpacity=0.8, radius = 2.8, popup = ~htmlEscape(ObsDate)) %>%
   addLegend("topright", pal = pal, values = ~DataSet, labels = "Species ", title = "Data Source")

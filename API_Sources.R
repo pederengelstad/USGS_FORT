@@ -73,11 +73,10 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
                decimalLongitude = as.numeric(longitude),
                ObsDate = as.Date(eventDate),
                ObsYear = year,
-               source_sp_name = word(scientificName,1,2," "),
-               searched_term = name)
+               source_sp_name = name)
 
       gbif_final <- gbif_df %>%
-        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
+        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name) %>%
         unique()
 
     } else { 
@@ -93,11 +92,10 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
                  decimalLongitude = as.numeric(longitude),
                  ObsDate = as.Date(date),
                  ObsYear = as.integer(format(as.Date(date), "%Y")),
-                 source_sp_name = providedScientificName,
-                 searched_term = word(name,1,2," "))
+                 source_sp_name = providedScientificName)
 
       bison_final <- bison_df %>%
-        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
+        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name) %>%
         unique()
     } else { 
         bison_final <- data.frame()
@@ -111,11 +109,10 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
                decimalLongitude = as.numeric(longitude),
                ObsDate = as.Date(observed_on),
                ObsYear = as.integer(format(as.Date(observed_on), "%Y")),
-               source_sp_name = name,
-               scientificName = word(name,1,2," "))
+               source_sp_name = name)
 
       inat_final <- inat_df %>%
-        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
+        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name) %>%
         unique()
     } else { 
       inat_final <- data.frame()
@@ -128,11 +125,10 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
                decimalLongitude = as.numeric(longitude),
                ObsDate = as.Date(eventDate),
                ObsYear = year,
-               source_sp_name = name,
-               scientificName = word(name,1,2," "))
+               source_sp_name = name)
 
       ecoengine_final <- ecoengine_df %>%
-        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, searched_term) %>%
+        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name) %>%
         unique()
     } else {
         ecoengine_final <- data.frame()
@@ -183,7 +179,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
                                  ,sep=''),simplifyDataFrame = T)
       
       print(paste0(tot_rec$total," records found for ",g2$Scientificname[g2$RowsID==i][1], collapse = ""))
-      
+      if(limit<tot_rec$total) tot_rec$total = limit
       
       if(tot_rec$total > 0){
         for (j in seq(1,  ceiling(tot_rec$total/3000),1)){
@@ -211,13 +207,13 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
                decimalLatitude = as.numeric(latitude_decimal),
                decimalLongitude = as.numeric(longitude_decimal),
                source_sp_name = hostscientificname,
-               searched_term = scientificname,
+               # searched_term = scientificname,
                ObsDate = as.Date(Observationdate),
                ObsYear = as.integer(format(as.Date(Observationdate), "%Y"))
         )
       
       edd_final <- edd_format %>%
-        select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, searched_term, ObsDate, ObsYear, IdentificationCredibility
+        select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, ObsDate, ObsYear, IdentificationCredibility
                ,national_ownership,local_ownership, abundance) %>%
         unique()
       

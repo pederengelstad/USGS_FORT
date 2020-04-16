@@ -18,7 +18,7 @@
 
 ################################
 list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","scrubr",'spocc',
-                      "stringr","taxize","tidyverse","sqldf", "lubridate","Hmisc","sf")
+                      "stringr","taxize","tidyverse","sqldf", "lubridate","Hmisc", "sf")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 

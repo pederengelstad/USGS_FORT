@@ -82,16 +82,16 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
     
     print("Finding USDA species codes")
     
-    plants.db = as.data.frame(gsheet::gsheet2tbl("https://docs.google.com/spreadsheets/d/1WkSt3EcOUkiRPRWeEZTKuQvkjhYFQre_Ox-I3FpPHbA/edit?usp=sharing"))
+    plants.db = read.csv('usda_plants_June2020.csv', header = T, stringsAsFactors = F)
     
     sp_df <<- sp_df %>%
-      left_join(plants.db, by = c('ITISacceptedName' = 'Scientific_Name')) %>%
-      left_join(plants.db, by = c('synonym' = 'Scientific_Name')) %>%
+      left_join(plants.db, by = c('ITISacceptedName' = 'Scientific.Name')) %>%
+      left_join(plants.db, by = c('synonym' = 'Scientific.Name')) %>%
       rowwise() %>%
-      mutate(usda_codes = ifelse(all(is.na(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),NA,
-                                 str_flatten(unique(na.omit(c(Accepted_Symbol.x,Synonym_Symbol.x,Accepted_Symbol.y,Synonym_Symbol.y))),
+      mutate(usda_codes = ifelse(all(is.na(c(Accepted.Symbol.x,Synonym.Symbol.x,Accepted.Symbol.y,Synonym.Symbol.y))),NA,
+                                 str_flatten(unique(na.omit(c(Accepted.Symbol.x,Synonym.Symbol.x,Accepted.Symbol.y,Synonym.Symbol.y))),
                                              collapse = ','))) %>%
-      select(-c(Accepted_Symbol.x, Accepted_Symbol.y, Synonym_Symbol.x, Synonym_Symbol.y))
+      select(ITISacceptedName, synonym, usda_codes)
     
     rm(plants.db)
     

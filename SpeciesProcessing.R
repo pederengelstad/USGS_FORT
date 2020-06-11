@@ -28,7 +28,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   t <- t[str_count(t$scientificName, pattern = '\\w+') > 1, ]
   
   # drop ssp and var using word term counts
-  t <- t[str_count(t$scientificName, pattern = '\\w+') == 2, ]
+  t <- t[str_count(t$scientificName, pattern = '\\S+') == 2, ]
   
   # find synonyms using function from the taxize library (make sure to have most recent build!)
   s0 <- suppressWarnings(suppressMessages(synonyms_df(synonyms(t$tsn, db = 'itis', ask=F))))

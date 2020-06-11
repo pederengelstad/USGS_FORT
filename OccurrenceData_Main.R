@@ -52,11 +52,13 @@ sp_list = c('Bromus tectorum', 'Bromus rubens', 'Euonymus alatus', 'Euonymus occ
 species_processing(sort(sp_list),USDA = T)
 
 # This is the master list. It does contain var and ssp but only if they are explicitly defined in ITIS as synonyms
+sp_df
 species_search_list
 
 
-################################################################################
+###############################################
 #3. Pull data from API Sources
+###############################################
 source('./API_Sources.R')
 
 # Query data available from API and loads into df_list the resulting data frame.
@@ -66,46 +68,40 @@ source('./API_Sources.R')
 #              which pulls ALL available records with geospatial information
 #
 # 3.2  df_list must be created outside the function to avoid re-running data sources that fail
-# 3.3  visit ... for information on the full range of bison and gbif options
 
 df_list <- list()
 api_sources <- c('bison', 'gbif', 'eddmaps')
 startdate <- '1980-01-01'
 enddate <- as.Date(Sys.Date())
 
-api_data(species_list = species_search_list
-         , sources = api_sources
-         , limit = 500
-         , startDate = startdate
-         , endDate = enddate
-         , US_only = T
-)
+api = api_data(species_list = species_search_list
+               , sources = api_sources
+               , limit = 999999
+               , startDate = startdate
+               , endDate = enddate
+               , US_only = T)
 
 
-########################################################################################################
-# Add data from .csv or .txt files; choose from 'blm_aim', 'blm_lmf', 'nisims' or a vector of 2+
+################################################################################################
+# Add data from .csv or .txt files
 # Requires: sp_df and species_search_list objects!!!
-# Note: AIM and LMF records without a date will be given the current date
+# Note: AIM and LMF records without a date will be given the current date - TO DO: resolve this!
+################################################################################################
 
 source('./DataFromFiles.R')
 
-# aim_file = 'J:/Projects/NPS/Data/OccDataSources/AIM.allsp.pnts.May2018.csv'
-aim_file_loc = "C:/Users/peder/Documents/USGS/Data/BLM/AIM.allsp.pnts.May2018.csv"
-# lmf_file = 'J:/Projects/NPS/Data/OccDataSources/LMF.allsp.csv'
-lmf_file_loc = "C:/Users/peder/Documents/USGS/Data/BLM/LMF.allsp.csv"
-# nisims_nps_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_NPS_L48.csv'
-nisims_nps_file_loc = "C:/Users/peder/Documents/USGS/Data/NISIMS/NISIMS_NPS_L48.csv"
-# nisims_blm_file_loc = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_BLM_L48.csv'
-nisims_blm_file_loc = "C:/Users/peder/Documents/USGS/Data/NISIMS/NISIMS_BLM_L48.csv"
-calflora_file_loc = 'C:/Users/peder/Downloads/calflora-out.csv'
-imap_file_loc = "C:/Users/peder/Downloads/Export__2020_04_10_123648593/PRESENCE_POINT__2020_04_10_123644593.csv"
-AddDataFromFiles(aim_file_loc = aim_file_loc,
-                 lmf_file_loc = lmf_file_loc,
-                 nisims_nps_file_loc = nisims_nps_file_loc,
-                 nisims_blm_file_loc = nisims_blm_file_loc,
-                 calflora_file_loc = calflora_file_loc,
-                 imap_file_loc = imap_file_loc
-                 )
+aim_file = 'J:/Projects/NPS/Data/OccDataSources/AIM.allsp.pnts.May2018.csv'
+lmf_file = 'J:/Projects/NPS/Data/OccDataSources/LMF.allsp.csv'
+nisims_nps_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_NPS_L48.csv'
+nisims_blm_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_BLM_L48.csv'
+
+file.data = AddDataFromFiles(aim_file_loc = aim_file,
+                             lmf_file_loc = lmf_file,
+                             nisims_nps_file_loc = nisims_nps_file,
+                             nisims_blm_file_loc = nisims_blm_file
+)
+
+all.data = append(api, file.data)
 
 ########################################################################################################
 #4. Perform QA/QC on occurrence records
@@ -117,7 +113,7 @@ source('./DataCleaning.R')
 #      C. A new column of the officially accepted ITIS species name and genus is appended (occ_all)
 #      D. occ_all is then de-duplicated and sorted alphabetically by species name as a final data object
 
-Data_QAQC(df_list)
+occ_all = Data_QAQC(df_list)
 
 occ_all %>%
   select(DataSet) %>%
@@ -125,8 +121,8 @@ occ_all %>%
   summarise(count = n())
 
 occ_all %>%
-  select(ITIS_final, source_sp_name, searched_term) %>%
-  group_by(ITIS_final, source_sp_name, searched_term) %>%
+  select(ITIS_final, source_sp_name) %>%
+  group_by(ITIS_final, source_sp_name) %>%
   summarise(count = n())
 
 write.csv(occ_all, './test.csv')

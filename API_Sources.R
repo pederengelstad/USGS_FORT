@@ -16,7 +16,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
   # 2.1 - Query sources for species data over their global extent (can be restricted to U.S. with additional parameter)
   #       What are the actual limits for GBIF and BISON record searches?
   #       Note 1: depending on the number of species and databases queried, the occ() function may result in very long run-times (> 15 min), esp w/ ecoengine
-  
+  df_list = list()
   v <- c("gbif", "bison", "inat", "ecoengine")
   
   #restrict records to US or leave search open to global records
@@ -84,9 +84,13 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
       }
     
     if(sum(sapply(spocc_df$bison$data, NROW)) > 0){
-      bison_df <- as.data.frame(occ2df(spocc_df$bison)) %>%
+      bison_df <- as.data.frame(occ2df(spocc_df$bison)) 
+
+      if('centroid' %in% names(bison_df)) bison_df = bison_df %>% filter(is.na(centroid))
+
+      bison_df = bison_df %>%
           filter(!is.na(date) & str_count(string = pointPath, pattern = 'centroid') != 1) %>%
-          filter(is.na(centroid) & basisOfRecord %in% c('observation','specimen')) %>%
+          filter(basisOfRecord %in% c('observation','specimen')) %>%
           mutate(DataSet = prov,
                  decimalLatitude = as.numeric(latitude),
                  decimalLongitude = as.numeric(longitude),
@@ -139,7 +143,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
       bind_rows(bison_final, inat_final, ecoengine_final)
     
     #add final version to global list of data frames
-    df_list[['spocc']] <<- unique(spocc_final)
+    df_list[['spocc']] <- unique(spocc_final)
     
     # assign("df_list", df_list, envir=.GlobalEnv)
     
@@ -198,7 +202,7 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
     }
 
     # 3.2 - format EDDMaps dataframe
-    if (nrow(edd_df) > 0){
+    if (length(edd_df) > 0){
       edd_format <- edd_df %>%
         filter(latitude_decimal != "") %>%
         select(latitude_decimal, longitude_decimal, hostscientificname, Observationdate, scientificname, IdentificationCredibility
@@ -215,13 +219,19 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
       edd_final <- edd_format %>%
         select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, ObsDate, ObsYear, IdentificationCredibility
                ,national_ownership,local_ownership, abundance) %>%
-        unique()
-      
-      df_list[['eddmaps']] <<- edd_final
-      
-      print("EddMapS Search Complete!")
-      
-    }  
+        unique()      
+    } else {
+        edd_final <- data.frame()
+    }
+
+
   }
+
+  df_list[['eddmaps']] <- edd_final
+
+  print("EddMapS Search Complete!")
+
   closeAllConnections()
+
+  return(df_list)
 }

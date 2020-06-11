@@ -16,10 +16,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
                             , imap_file_loc = NULL){
   
   #check settings to make sure the necessary steps have been completed
-  if(is.null(df_list)){
-    print("Make sure to create df_list object!"); stop()
-  }
-  
+  df_list = list()  
 
   if(!is.null(c(aim_file_loc, lmf_file_loc, nisims_nps_file_loc, nisims_nps_file_loc))){
 
@@ -59,7 +56,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
         select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, usda_name, pct.cover) %>%
         unique()
       
-      df_list[['BLM_AIM']] <<- aim_parse
+      df_list[['BLM_AIM']] <- aim_parse
     }
   }
   
@@ -112,7 +109,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
           select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, usda_name, ObsDate, ObsYear, pct.cover) %>%
           unique()
         
-        df_list[['BLM_LMF']] <<- lmf_final  
+        df_list[['BLM_LMF']] <- lmf_final  
       } 
     }  
   }
@@ -166,7 +163,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
           mutate(pct.cover = ifelse(pct.cover > 1, pct.cover/100, pct.cover)) %>%
           unique()
         
-        df_list[['nisims_nps']] <<- nisims_final_NPS  
+        df_list[['nisims_nps']] <- nisims_final_NPS  
       }
     }
   }
@@ -219,7 +216,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
           mutate(pct.cover = ifelse(pct.cover > 1, pct.cover/100, pct.cover)) %>%
           unique()
         
-        df_list[['nisims_blm']] <<- nisims_final_BLM 
+        df_list[['nisims_blm']] <- nisims_final_BLM 
       }      
     }  
   }
@@ -243,7 +240,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
               select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name,
                      Observer, Source, County, Location.Quality)
 
-    df_list[['calflora']] <<- cal.df 
+    df_list[['calflora']] <- cal.df 
 
 
     }
@@ -265,9 +262,11 @@ AddDataFromFiles = function(aim_file_loc = NULL
       select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name,
              Observer, organization_name, jurisdiction, management_area)
 
-    df_list[['iMapInvasives']] <<- imap.df 
+    df_list[['iMapInvasives']] <- imap.df 
 
 
     }
+
+    return(df_list)
 
 }

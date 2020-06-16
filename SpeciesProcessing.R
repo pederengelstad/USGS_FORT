@@ -15,7 +15,7 @@ species_processing <- function(sp_list=NULL, USDA=TRUE){
   library(Hmisc)
   
   # get required TSNs to efficiently process species names using ITIS
-  t0 <- unique(bind_rows(get_tsn_(searchterm = sort(sp_list),accepted = F, messages = T)))
+  t0 <- unique(bind_rows(get_tsn_(sci_com = sort(sp_list),accepted = F, messages = T)))
   t0 <- t0[, c('nameUsage','scientificName','tsn')]
   
   # drop names that aren't in the original search list or are 'accepted'. this speeds up synonym search time.

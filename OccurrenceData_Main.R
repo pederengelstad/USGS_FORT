@@ -66,7 +66,6 @@ source('./API_Sources.R')
 #      limit - is the number of results PER SPECIES and is not currently passed to EDDMapS
 #              which pulls ALL available records with geospatial information
 #
-# 3.2  df_list must be created outside the function to avoid re-running data sources that fail
 
 api_sources <- c('bison', 'gbif', 'eddmaps')
 startdate <- '1980-01-01'
@@ -111,7 +110,7 @@ source('./DataCleaning.R')
 #      C. A new column of the officially accepted ITIS species name and genus is appended (occ_all)
 #      D. occ_all is then de-duplicated and sorted alphabetically by species name as a final data object
 
-occ_all = Data_QAQC(df_list)
+occ_all = Data_QAQC(all.data)
 
 occ_all %>%
   select(DataSet) %>%

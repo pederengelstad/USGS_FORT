@@ -46,9 +46,8 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
-# sp_list = suppressWarnings(readLines("C:/Users/pengelstad/Documents/20191217/splist.txt"))
-sp_list = c('Bromus tectorum', 'Bromus rubens', 'Euonymus alatus', 'Euonymus occidentalis', 
-            'Pennisetum setaceum', 'Cenchrus ciliaris', 'Halogeton glameratus', 'Ventenata dubia')
+sp_list = suppressWarnings(readLines("path/to/file.csv or file.txt"))
+# sp_list = c('Bromus tectorum', 'Bromus rubens')
 species_processing(sort(sp_list),USDA = T)
 
 # This is the master list. It does contain var and ssp but only if they are explicitly defined in ITIS as synonyms
@@ -69,7 +68,6 @@ source('./API_Sources.R')
 #
 # 3.2  df_list must be created outside the function to avoid re-running data sources that fail
 
-df_list <- list()
 api_sources <- c('bison', 'gbif', 'eddmaps')
 startdate <- '1980-01-01'
 enddate <- as.Date(Sys.Date())

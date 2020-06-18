@@ -8,6 +8,7 @@ require('sf')
 require('sqldf')
 require('lubridate')
 
+
 AddDataFromFiles = function(aim_file_loc = NULL
                             , lmf_file_loc = NULL
                             , nisims_nps_file_loc = NULL
@@ -15,17 +16,32 @@ AddDataFromFiles = function(aim_file_loc = NULL
                             , calflora_file_loc = NULL
                             , imap_file_loc = NULL){
   
+  
+  decLong.tmp = function(x){
+    tryCatch(
+      as.numeric(str_extract_all(as.character(x), "(-?\\d+\\.+\\d+)")[2]),
+      error = function(e){NA}
+    )
+  }
+  
+  decLat.tmp = function(x){
+    tryCatch(
+      as.numeric(str_extract_all(as.character(x), "(-?\\d+\\.+\\d+)")[1]),
+      error = function(e){NA}
+    )
+  }
+  
   #check settings to make sure the necessary steps have been completed
   df_list = list()  
-
+  
   if(!is.null(c(aim_file_loc, lmf_file_loc, nisims_nps_file_loc, nisims_nps_file_loc))){
-
+    
     sp_df_exp = as.data.frame(sp_df) %>% separate(usda_codes, into = paste("V", 1:10), sep = ',')
-
+    
     if(is.null(sp_df$usda_codes)){
       print("Re-run species processing with USDA=T!"); stop()
     }
-  
+    
     #before anything gets processed, all these parsing lines NEED this
     code_list <- sort(unique(unlist(str_extract_all(str_flatten( c(na.omit(sp_df$usda_codes)), collapse = ', '), boundary('word')))))
   }  
@@ -49,12 +65,16 @@ AddDataFromFiles = function(aim_file_loc = NULL
         mutate(ObsDate = as.Date(Date)) %>%
         mutate(pct.cover = prop.cover)
       
-      aim_parse = sqldf('SELECT * FROM aim_parse
-       LEFT JOIN sp_df_exp ON usda_name = sp_df_exp."V 1"
-      ') %>%
-        mutate(source_sp_name = ITISacceptedName) %>%
-        select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, usda_name, pct.cover) %>%
-        unique()
+      aim_parse = sqldf('SELECT DISTINCT aim_parse.*, ITISacceptedName FROM aim_parse
+       LEFT JOIN sp_df_exp ON (usda_name = sp_df_exp."V 1") 
+          OR (usda_name = sp_df_exp."V 2")
+          OR (usda_name = sp_df_exp."V 3")
+          OR (usda_name = sp_df_exp."V 4")
+          OR (usda_name = sp_df_exp."V 5")
+          OR (usda_name = sp_df_exp."V 6")') %>%
+                mutate(source_sp_name = ITISacceptedName) %>%
+                select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name, usda_name, pct.cover) %>%
+                unique()
       
       df_list[['BLM_AIM']] <- aim_parse
     }
@@ -82,9 +102,14 @@ AddDataFromFiles = function(aim_file_loc = NULL
                usda_name = code) %>%
         mutate(pct.cover = prop.cover)
       
-      lmf_parse = sqldf('SELECT * FROM lmf_parse
-       LEFT JOIN sp_df_exp ON usda_name = "V 1"
-      ') %>%
+      lmf_parse = sqldf('SELECT DISTINCT * FROM lmf_parse
+        LEFT JOIN sp_df_exp ON (usda_name = sp_df_exp."V 1") 
+          OR (usda_name = sp_df_exp."V 2")
+          OR (usda_name = sp_df_exp."V 3")
+          OR (usda_name = sp_df_exp."V 4")
+          OR (usda_name = sp_df_exp."V 5")
+          OR (usda_name = sp_df_exp."V 6")      
+        ') %>%
         mutate(source_sp_name = ITISacceptedName) %>%
         select(DataSet, decimalLatitude_NAD83, decimalLongitude_NAD83, source_sp_name, ObsDate, ObsYear, usda_name, pct.cover) %>%
         unique()
@@ -101,10 +126,9 @@ AddDataFromFiles = function(aim_file_loc = NULL
         lmf_reproj <- sf::st_transform(sf.point_lmf, crs = 4326)
         
         lmf_df <- as.data.frame(lmf_reproj) %>%
-          
-          mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(lmf_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
-                 decimalLatitude = as.numeric(lapply(str_extract_all(as.character(lmf_reproj$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
-        
+          mutate(decimalLatitude = as.numeric(map(geometry, decLat.tmp)),
+                 decimalLongitude = as.numeric(map(geometry, decLong.tmp)))
+                 
         lmf_final <- lmf_df %>%
           select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, usda_name, ObsDate, ObsYear, pct.cover) %>%
           unique()
@@ -137,8 +161,13 @@ AddDataFromFiles = function(aim_file_loc = NULL
         mutate(pct.cover = EST_CVR_RT)
       
       
-      NPS_PARSE = sqldf('SELECT * FROM NPS_PARSE
-       LEFT JOIN sp_df_exp ON usda_name = "V 1"
+      NPS_PARSE = sqldf('SELECT DISTINCT * FROM NPS_PARSE
+       LEFT JOIN sp_df_exp ON (usda_name = sp_df_exp."V 1") 
+          OR (usda_name = sp_df_exp."V 2")
+          OR (usda_name = sp_df_exp."V 3")
+          OR (usda_name = sp_df_exp."V 4")
+          OR (usda_name = sp_df_exp."V 5")
+          OR (usda_name = sp_df_exp."V 6")
       ') %>%
         mutate(source_sp_name = ITISacceptedName) %>%
         select(DataSet, albersLatitude, albersLongitude, usda_name, ObsDate, ObsYear, source_sp_name, pct.cover) %>%
@@ -155,8 +184,8 @@ AddDataFromFiles = function(aim_file_loc = NULL
         nisims_reproj_NPS <- sf::st_transform(sf.point, crs = 4326)
         
         nisims_df_NPS <- as.data.frame(nisims_reproj_NPS) %>%
-          mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
-                 decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_NPS$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
+          mutate(decimalLatitude = as.numeric(map(geometry, decLat.tmp)),
+                 decimalLongitude = as.numeric(map(geometry, decLong.tmp)))
         
         nisims_final_NPS <- nisims_df_NPS %>%
           select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, usda_name, ObsDate, ObsYear, pct.cover) %>%
@@ -190,8 +219,13 @@ AddDataFromFiles = function(aim_file_loc = NULL
         filter(!is.na(albersLongitude) | !is.na(albersLongitude)) %>%
         mutate(pct.cover = EST_CVR_RT)
       
-      N_BLM_PARSE = sqldf('SELECT * FROM N_BLM_PARSE
-       LEFT JOIN sp_df_exp ON usda_name = "V 1"
+      N_BLM_PARSE = sqldf('SELECT DISTINCT * FROM N_BLM_PARSE
+       LEFT JOIN sp_df_exp ON (usda_name = sp_df_exp."V 1") 
+          OR (usda_name = sp_df_exp."V 2")
+          OR (usda_name = sp_df_exp."V 3")
+          OR (usda_name = sp_df_exp."V 4")
+          OR (usda_name = sp_df_exp."V 5")
+          OR (usda_name = sp_df_exp."V 6")
       ') %>%
         mutate(source_sp_name = ITISacceptedName) %>%
         select(DataSet, albersLatitude, albersLongitude, source_sp_name, ObsDate, ObsYear, usda_name, pct.cover) %>%
@@ -208,8 +242,8 @@ AddDataFromFiles = function(aim_file_loc = NULL
         nisims_reproj_BLM <- st_transform(sf.point_BLM, crs = 4326)
         
         nisims_df_BLM <- as.data.frame(nisims_reproj_BLM) %>%
-          mutate(decimalLongitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 1)),
-                 decimalLatitude = as.numeric(lapply(str_extract_all(as.character(nisims_reproj_BLM$geometry), "(-?\\d+\\.+\\d+)"), `[[`, 2)))
+          mutate(decimalLatitude = as.numeric(map(geometry, decLat.tmp)),
+                 decimalLongitude = as.numeric(map(geometry, decLong.tmp)))
         
         nisims_final_BLM <- nisims_df_BLM %>%
           select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, usda_name, ObsDate, ObsYear, pct.cover) %>%
@@ -220,34 +254,34 @@ AddDataFromFiles = function(aim_file_loc = NULL
       }      
     }  
   }
-
-
+  
+  
   # Because the download process is so manual for CalFlora and iMapInvasive data, we're assuming that
   # the species selected are already desired. Even so, non-matching results are still compared to the sp_df
   # object created in the species_processing() function.
   
   if(!is.null(calflora_file_loc)){
-
+    
     cal.raw = read.csv(calflora_file_loc, header = T, stringsAsFactors = F)
     cal.df = cal.raw %>%
-              filter(Location.Quality == 'high' & !grepl('var', Taxon)) %>%
-              mutate(DataSet = 'CalFlora',
-                     decimalLatitude = as.numeric(Latitude),
-                     decimalLongitude = as.numeric(Longitude),               
-                     ObsDate = as.Date(parse_date_time(Date, orders = 'mdy')),
-                     ObsYear = as.integer(format(ObsDate, "%Y")),
-                     source_sp_name = Hmisc::capitalize(tolower(Taxon))) %>%
-              select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name,
-                     Observer, Source, County, Location.Quality)
-
+      filter(Location.Quality == 'high' & !grepl('var', Taxon)) %>%
+      mutate(DataSet = 'CalFlora',
+             decimalLatitude = as.numeric(Latitude),
+             decimalLongitude = as.numeric(Longitude),               
+             ObsDate = as.Date(parse_date_time(Date, orders = 'mdy')),
+             ObsYear = as.integer(format(ObsDate, "%Y")),
+             source_sp_name = Hmisc::capitalize(tolower(Taxon))) %>%
+      select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name,
+             Observer, Source, County, Location.Quality)
+    
     df_list[['calflora']] <- cal.df 
-
-
-    }
-
-
+    
+    
+  }
+  
+  
   if(!is.null(imap_file_loc)){
-
+    
     imap.raw = read.csv(imap_file_loc, header = T, stringsAsFactors = F)
     imap.df = imap.raw %>%
       mutate(scientific_name = ifelse(grepl(';',scientific_name), gsub(';','',word(scientific_name, 1, 2, ' ')), scientific_name)) %>%
@@ -261,12 +295,12 @@ AddDataFromFiles = function(aim_file_loc = NULL
              source_sp_name = scientific_name) %>%
       select(DataSet, decimalLatitude, decimalLongitude, ObsDate, ObsYear, source_sp_name,
              Observer, organization_name, jurisdiction, management_area)
-
+    
     df_list[['iMapInvasives']] <- imap.df 
-
-
-    }
-
-    return(df_list)
-
+    
+    
+  }
+  
+  return(df_list)
+  
 }

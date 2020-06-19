@@ -184,8 +184,8 @@ AddDataFromFiles = function(aim_file_loc = NULL
         nisims_reproj_NPS <- sf::st_transform(sf.point, crs = 4326)
         
         nisims_df_NPS <- as.data.frame(nisims_reproj_NPS) %>%
-          mutate(decimalLatitude = as.numeric(map(geometry, decLat.tmp)),
-                 decimalLongitude = as.numeric(map(geometry, decLong.tmp)))
+          mutate(decimalLongitude = as.numeric(map(geometry, decLat.tmp)),
+                 decimalLatitude = as.numeric(map(geometry, decLong.tmp)))
         
         nisims_final_NPS <- nisims_df_NPS %>%
           select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, usda_name, ObsDate, ObsYear, pct.cover) %>%
@@ -242,8 +242,8 @@ AddDataFromFiles = function(aim_file_loc = NULL
         nisims_reproj_BLM <- st_transform(sf.point_BLM, crs = 4326)
         
         nisims_df_BLM <- as.data.frame(nisims_reproj_BLM) %>%
-          mutate(decimalLatitude = as.numeric(map(geometry, decLat.tmp)),
-                 decimalLongitude = as.numeric(map(geometry, decLong.tmp)))
+          mutate(decimalLongitude = as.numeric(map(geometry, decLat.tmp)),
+                 decimalLatitude = as.numeric(map(geometry, decLong.tmp)))
         
         nisims_final_BLM <- nisims_df_BLM %>%
           select(DataSet, decimalLatitude, decimalLongitude, source_sp_name, usda_name, ObsDate, ObsYear, pct.cover) %>%

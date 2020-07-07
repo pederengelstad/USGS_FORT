@@ -59,7 +59,7 @@ AddDataFromFiles = function(aim_file_loc = NULL
         mutate(DataSet = 'BLM_AIM',
                decimalLatitude = as.numeric(Latitude),
                decimalLongitude = as.numeric(Longitude),
-               Date = ifelse(is.na(UseDate.y), as.character(enddate), UseDate.y),
+               Date = ifelse(is.na(UseDate.y), as.character(paste0('01/01/',VisitYear)), UseDate.y),
                ObsYear = as.integer(VisitYear),
                usda_name = code) %>%
         mutate(ObsDate = as.Date(Date)) %>%

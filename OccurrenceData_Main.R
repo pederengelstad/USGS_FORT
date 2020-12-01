@@ -5,7 +5,7 @@
 # Affiliation: Colorado State University
 # Contact: pengel@colostate.edu
 # Origin Date: 3/7/2018
-# Last Edited: 04/04/2020
+# Last Edited: 12/01/2020
 # Purpose: Download and combine species occurrence data, perform QA/QC, and export to CSV
 # Script Purpose: Pull occurrence records from API and hard-coded data sources
 #
@@ -16,7 +16,6 @@
 # Contact: peder.engelstad@colostate.edu
 
 
-################################
 list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","scrubr",'spocc',
                       "stringr","taxize","tidyverse","sqldf", "lubridate","Hmisc", "sf")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -28,13 +27,10 @@ if(length(new.packages)) install.packages(new.packages)
 
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-# !!! make sure you have the latest version of the source scripts to run the following lines
-# download.file(url="https://github.com/pederengelstad/USGS_FORT/archive/master.zip",destfile = 'OccScripts.zip', method = "curl")
-# unzip('OccScripts.zip', overwrite = TRUE)
+######################################################################
+# 2. Check for synonyms from ITIS and develop a finalized species list
+######################################################################
 
-################################################################################
-#2. Check for synonyms from ITIS and develop a finalized species list
-library(tidyverse, verbose = F, quietly = T)
 source('./SpeciesProcessing.R')
 
 # Notes:
@@ -46,17 +42,14 @@ source('./SpeciesProcessing.R')
 # 2.2 The USDA parameter (TRUE/FALSE) will generate a list of official and 
 #     synonym USDA codes that can be passed to data sources that require them.
 
-sp_list = suppressWarnings(readLines("path/to/file.csv or file.txt"))
-# sp_list = c('Bromus tectorum', 'Bromus rubens')
-species_processing(sort(sp_list),USDA = T)
+# sp_list = suppressWarnings(readLines("path/to/file.csv or file.txt"))
+sp_list = c('Halogeton glomeratus', 'Potentilla recta')
 
-# This is the master list. It does contain var and ssp but only if they are explicitly defined in ITIS as synonyms
-sp_df
-species_search_list
+sp_proc = species_processing(sp_list, USDA = T)
 
 
 ###############################################
-#3. Pull data from API Sources
+# 3. Pull data from API Sources
 ###############################################
 source('./API_Sources.R')
 
@@ -71,37 +64,39 @@ api_sources <- c('bison', 'gbif', 'eddmaps')
 startdate <- '1980-01-01'
 enddate <- as.Date(Sys.Date())
 
-api = api_data(species_list = species_search_list
+api = api_data(species_list = sp_proc$species_search_list
                , sources = api_sources
-               , limit = 999999
+               , limit = 100
                , startDate = startdate
                , endDate = enddate
                , US_only = T)
 
 
 ################################################################################################
-# Add data from .csv or .txt files
-# Requires: sp_df and species_search_list objects!!!
-# Note: AIM and LMF records without a date will be given the current date - TO DO: resolve this!
+# 4.  Add data from .csv or .txt files
 ################################################################################################
 
 source('./DataFromFiles.R')
 
-aim_file = 'J:/Projects/NPS/Data/OccDataSources/AIM.allsp.pnts.May2018.csv'
-lmf_file = 'J:/Projects/NPS/Data/OccDataSources/LMF.allsp.csv'
+aim_file = 'J:/Projects/NPS/Data/OccDataSources/aim_lmf_allSp_Jun2020.csv'
 nisims_nps_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_NPS_L48.csv'
 nisims_blm_file = 'J:/Projects/NPS/Data/OccDataSources/NISIMS_BLM_L48.csv'
 
-file.data = AddDataFromFiles(aim_file_loc = aim_file,
-                             lmf_file_loc = lmf_file,
+file.data = AddDataFromFiles(code_list = sp_proc$usda_code_vec,
+                             sp_df = sp_proc$sp_df,
+                             aim_file_loc = aim_file,
                              nisims_nps_file_loc = nisims_nps_file,
                              nisims_blm_file_loc = nisims_blm_file
 )
 
 all.data = append(api, file.data)
 
-########################################################################################################
-#4. Perform QA/QC on occurrence records
+
+
+########################################
+# 5. Perform QA/QC on occurrence records
+########################################
+
 source('./DataCleaning.R')
 
 # 4.1  This function performs several actions to filter the downloaded data.
@@ -122,10 +117,14 @@ occ_all %>%
   group_by(ITIS_final, source_sp_name) %>%
   summarise(count = n())
 
-write.csv(occ_all, './test.csv')
+write.csv(occ_all, './sp_occ_out.csv')
 
-########################################################################################################
-# 5. Quickly view species of interest on a map for QA purposes
+
+
+##############################################################
+# 6. Quickly view species of interest on a map for QA purposes
+##############################################################
+
 library(leaflet)
 library(viridis)
 library(htmltools)

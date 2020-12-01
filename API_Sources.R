@@ -224,10 +224,10 @@ api_data <- function(species_list = NULL, sources=c('gbif','bison','inat','ecoen
         edd_final <- data.frame()
     }
 
+      df_list[['eddmaps']] <- edd_final
 
   }
 
-  df_list[['eddmaps']] <- edd_final
 
   print("EddMapS Search Complete!")
 

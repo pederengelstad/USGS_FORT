@@ -15,7 +15,6 @@
 #
 # Contact: peder.engelstad@colostate.edu
 
-
 list.of.packages <- c("devtools","gsheet","jsonlite","rgdal","rgeos","ritis","scrubr",'spocc',
                       "stringr","taxize","tidyverse","sqldf", "lubridate","Hmisc", "sf")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -43,7 +42,7 @@ source('./SpeciesProcessing.R')
 #     synonym USDA codes that can be passed to data sources that require them.
 
 # sp_list = suppressWarnings(readLines("path/to/file.csv or file.txt"))
-sp_list = c('Halogeton glomeratus', 'Potentilla recta')
+sp_list = c('Acroptilon repens', 'Rhaponticum repens')
 
 sp_proc = species_processing(sp_list, USDA = T)
 

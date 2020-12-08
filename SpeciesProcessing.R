@@ -24,13 +24,13 @@ species_processing = function(sp_list=NULL, USDA=TRUE){
   
   # get required TSNs to efficiently process species names using ITIS
   t0 <- unique(
-        dplyr::bind_rows(
-          taxize::get_tsn_(sci_com = sort(sp_list),
-                           accepted = F, 
-                           messages = T)
-        )
-       )
-
+    dplyr::bind_rows(
+      taxize::get_tsn_(sci_com = sort(sp_list),
+                       accepted = F, 
+                       messages = T)
+    )
+  )
+  
   t0 <- t0[, c('nameUsage','scientificName','tsn')]
   
   # drop names that aren't in the original search list or are 'accepted'. this speeds up synonym search time.
@@ -47,14 +47,14 @@ species_processing = function(sp_list=NULL, USDA=TRUE){
   
   # find synonyms using function from the taxize library (make sure to have most recent build!)
   s0 <- suppressWarnings(
-        suppressMessages(
-          taxize::synonyms_df(
-            taxize::synonyms(t$tsn, 
-                             db = 'itis', 
-                             ask=F)
-            )
-          )
-        )
+    suppressMessages(
+      taxize::synonyms_df(
+        taxize::synonyms(t$tsn, 
+                         db = 'itis', 
+                         ask=F)
+      )
+    )
+  )
   
   if(nrow(s0) > 0){
     
@@ -90,14 +90,14 @@ species_processing = function(sp_list=NULL, USDA=TRUE){
     sp_df <- t %>%
       mutate(syn_name = NA) %>%
       mutate(ITISacceptedName = ifelse(nameUsage == 'accepted' | nameUsage == 'valid', 
-                                        stringr::word(scientificName,1,2,' '), 
-                                        NA),
+                                       stringr::word(scientificName,1,2,' '), 
+                                       NA),
              synonym = ifelse(!is.null(syn_name), 
                               Hmisc::capitalize(tolower(syn_name)), 
-                               NA)) %>%
+                              NA)) %>%
       mutate(ITISacceptedName = ifelse(is.na(ITISacceptedName), 
-                                        stringr::word(acc_name,1,2,' '), 
-                                        ITISacceptedName)) %>%
+                                       stringr::word(acc_name,1,2,' '), 
+                                       ITISacceptedName)) %>%
       mutate(syn_tsn = NA, acc_tsn = as.numeric(tsn)) %>%
       select(ITISacceptedName, synonym, acc_tsn, syn_tsn) %>%
       unique()
@@ -110,11 +110,11 @@ species_processing = function(sp_list=NULL, USDA=TRUE){
   
   # can drop the NA row for these species
   na.drop <- suppressWarnings(sp_df %>% 
-    dplyr::group_by(ITISacceptedName) %>% 
-    dplyr::count() %>% 
-    dplyr::filter(n > 1) %>% 
-    dplyr::select(ITISacceptedName))$ITISacceptedName
-
+                                dplyr::group_by(ITISacceptedName) %>% 
+                                dplyr::count() %>% 
+                                dplyr::filter(n > 1) %>% 
+                                dplyr::select(ITISacceptedName))$ITISacceptedName
+  
   sp_df <- sp_df %>% 
     dplyr::filter((!is.na(synonym) & ITISacceptedName %in% na.drop) | (! ITISacceptedName %in% na.drop)) 
   
@@ -125,30 +125,25 @@ species_processing = function(sp_list=NULL, USDA=TRUE){
   if(USDA == TRUE){
     
     print("Finding USDA species codes")
-    
-    plants.db <- vroom::vroom('usda_plants_Dec2020.csv', progress = F)
+    Sys.setenv("VROOM_SHOW_PROGRESS"="false")
+    plants.db <- suppressMessages(vroom::vroom('usda_plants_Dec2020.csv', progress = F))
     colnames(plants.db) <- gsub(pattern = ' |/', replacement = '_', x = colnames(plants.db))
     
     # Find accepted name matches
     tmp1 <- sp_df %>% 
       dplyr::inner_join(plants.db, by = c('acc_tsn' = 'ITIS_TSN')) %>%
-      dplyr::select(ITISacceptedName, acc_tsn, Accepted_Symbol, synonym, syn_tsn)
-      
+      dplyr::select(ITISacceptedName, acc_tsn, Accepted_Symbol, synonym, syn_tsn, Synonym_Symbol)
+    
     tmp2 <- sp_df %>% 
       dplyr::inner_join(plants.db, by = c('syn_tsn' = 'ITIS_TSN')) %>%
-      dplyr::select(syn_tsn, Synonym_Symbol) %>%
-      dplyr::filter(!is.na(syn_tsn))
-    
-    tmp3 <- tmp1 %>%
-      dplyr::left_join(tmp2, by = c('syn_tsn' = 'syn_tsn')) %>%
-      unique  %>%
-      dplyr::mutate(usda_codes = ifelse(!is.na(Synonym_Symbol), 
-                                  paste(paste(Accepted_Symbol, Synonym_Symbol, sep =',')),
-                                  Accepted_Symbol))
-    
-    sp_df <- sp_df %>%
-      dplyr::left_join(tmp3)
-    
+      dplyr::select(ITISacceptedName, acc_tsn, Accepted_Symbol, synonym, syn_tsn, Synonym_Symbol)
+
+    sp_df <- dplyr::bind_rows(tmp1, tmp2) %>% 
+      dplyr::distinct() %>% 
+      dplyr::mutate(usda_codes = ifelse(!is.na(Synonym_Symbol),
+                                        paste(paste(Accepted_Symbol, Synonym_Symbol, sep =',')),
+                                        Accepted_Symbol))
+      
     code_list <- sort(
       unique(
         unlist(
@@ -166,5 +161,5 @@ species_processing = function(sp_list=NULL, USDA=TRUE){
   out$usda_code_vec <- code_list
   
   return(out)
-
+  
 }
